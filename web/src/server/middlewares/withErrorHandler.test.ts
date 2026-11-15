@@ -18,6 +18,14 @@ describe("withErrorHandler", () => {
     expect(response.headers.get("x-request-id")).toBe("abc");
   });
 
+  it("replaces an unsafe incoming request id", async () => {
+    const wrapped = withErrorHandler(async () => new Response("ok"));
+    const response = await wrapped(
+      new Request("http://localhost/x", { headers: { "x-request-id": "bad id\n injected" } }),
+    );
+    expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it("returns 400 for invalid input", async () => {
     const handler = withErrorHandler(async () => {
       z.string().parse(1);

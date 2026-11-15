@@ -1,0 +1,1 @@
+export const DATABASE_PING_TIMEOUT_MS = 2000;

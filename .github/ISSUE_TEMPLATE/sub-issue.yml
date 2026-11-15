@@ -1,0 +1,72 @@
+name: Sub-issue (one task under a PBI)
+description: One task of 1 to 4 hours with a clear "done when". The fields and their order never change.
+title: "[PBI-0xx.n] Verb object"
+body:
+  - type: input
+    id: id
+    attributes: { label: ID, placeholder: "PBI-0xx.n" }
+    validations: { required: true }
+  - type: input
+    id: parent
+    attributes: { label: Parent, placeholder: "PBI-0xx Title of the PBI" }
+    validations: { required: true }
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Sprint
+      options: [S1, S2, S3, S4, S5, S6, S7, S8]
+    validations: { required: true }
+  - type: input
+    id: owner
+    attributes: { label: Owner, description: "Role, proposal confirmed at sprint planning", placeholder: "Frontend 1" }
+    validations: { required: true }
+  - type: input
+    id: estimate
+    attributes: { label: Estimate (hours), placeholder: "2" }
+    validations: { required: true }
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [Must, Should, Could]
+    validations: { required: true }
+  - type: input
+    id: depends
+    attributes: { label: Depends on, placeholder: "PBI-0xx.n, or None" }
+    validations: { required: true }
+  - type: input
+    id: labels
+    attributes: { label: Labels, placeholder: "sprint:S1, priority:must" }
+  - type: textarea
+    id: files
+    attributes: { label: Files, description: "Paths the task creates or edits" }
+    validations: { required: true }
+  - type: textarea
+    id: context
+    attributes: { label: Context, description: "Why the task exists, which AC or rule it serves" }
+    validations: { required: true }
+  - type: textarea
+    id: do
+    attributes: { label: Do, description: "Numbered steps" }
+    validations: { required: true }
+  - type: textarea
+    id: done
+    attributes: { label: Done when, description: "Checklist linked to the AC and TC of the PBI" }
+    validations: { required: true }
+  - type: textarea
+    id: open
+    attributes:
+      label: Open point
+      description: "None, or Question, Options, Recommendation (unverified: research the best practice first), Judge by, Time box"
+    validations: { required: true }
+  - type: textarea
+    id: learn
+    attributes: { label: Learn first, description: "Links, 20 to 30 minutes" }
+  - type: textarea
+    id: verify
+    attributes: { label: Verify, description: "The exact commands or checks" }
+    validations: { required: true }
+  - type: input
+    id: commit
+    attributes: { label: Commit, placeholder: "feat(scope): what changes" }
+    validations: { required: true }

@@ -12,6 +12,16 @@ Reusable UI lives in `src/common/ui/` (shadcn/ui, ADR 0006): no business logic, 
 `bun run arch` fails on: client code importing `src/server`; one component package (`components/<group>/<Package>`) importing another; `src/contracts` importing anything except zod and other contracts; a module reaching into another module except through its `index.ts`; a lower layer importing a higher one; a controller skipping the service; the Supabase client outside repositories and `server/config`; a provider SDK outside `server/ai/adapters`; a model, DTO, validator, interface or constant importing a service, repository or controller; circular imports; unresolvable imports; production code importing a test file. ESLint fails on `process.env` outside `server/config` and on `dangerouslySetInnerHTML`.
 Do not work around a rule. If it is wrong, open an ADR.
 
+## API conventions
+- **Route:** `web/src/app/api/<resource>/route.ts`, plural nouns (`/api/documents`, `/api/users/:id`), actions only where a noun does not fit (`/api/documents/:id/retry`). The route file only wraps and calls the module's controller.
+- **Wrappers:** every route uses `withErrorHandler`, plus `withAuth`, `withRole` and `withRateLimit` as needed. The server decides who the caller is and what level they have; never trust a role or level sent by the browser.
+- **Input:** validated with zod in the module's validator before the service runs. Unknown or wrong input is a 400.
+- **Output:** shaped by the module's DTO, typed from the contract in `src/contracts/<module>.dto.ts`. Never return a database row as it is.
+- **Errors:** JSON `{ "error": "<snake_case_code>", "requestId": "..." }`, never a stack trace. Codes used: 400 `invalid_request`, 401 not signed in, 403 not allowed (for example `consent_required`), 404 not found, 409 conflict (for example a document that cannot be retried), 429 rate limited, 500 `internal_error`, 501 `not_implemented`, 503 a dependency is down.
+- **Request id:** every response carries `x-request-id`; log it with every line about that request.
+- **Tests:** each endpoint has a permission test (who may call it, who may not) and a contract test on the frontend service.
+- **Docs:** add or change the row in `docs/ENDPOINTS.md` in the same PR.
+
 ## Logging and errors
 Use `logger` (`server/utils/logger.ts`), never `console` directly (the logger is the only place allowed to write to stdout). Log ids and counts, never secrets, tokens, member questions or document text.
 Routes are wrapped in `withErrorHandler`: it adds `x-request-id` and returns clean JSON errors.
@@ -40,4 +50,4 @@ Medium strict (ADR 0004). Fix warnings in the files you touch.
 A new route goes in `docs/ENDPOINTS.md`, a new table in `docs/MODELS.md`, a new pattern in an ADR (`docs/adr/0000-template.md`), all in the same PR.
 
 ## Done means
-Follows this standard, CI green, tests pass, reviewed by one person, preview deployed, docs updated if behaviour changed.
+Follows this standard, CI green, tests pass, reviewed by your role pair when possible (recommended, not required), docs updated if behaviour changed. Production is deployed from `main` by hand (`docs/OPERATIONS.md`).

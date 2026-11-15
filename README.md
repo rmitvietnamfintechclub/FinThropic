@@ -58,7 +58,7 @@ Working examples to copy: `web/src/components/health/HealthBadge/` (frontend pac
 
 Read `CONTRIBUTING.md`. In short: take your sub-issue, branch `feat/<issue-number>-short-name` from the latest `main`, keep it to 1 or 2 days, open a small pull request with the template, CI green, one review, squash merge. Merge by Saturday 23:59 (Vietnam time); `main` is tagged `sprint-N` on Sunday.
 
-Every pull request gets a preview deployment on Vercel; its link appears on the pull request. Previews use the test database and test keys.
+There are no automatic preview deployments: check your change locally with `bun run dev`. Production (https://finthropic.vercel.app) is deployed from `main` by hand (`docs/OPERATIONS.md`).
 
 ## Rules that never bend
 

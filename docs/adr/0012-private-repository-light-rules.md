@@ -21,5 +21,5 @@ Team rules that GitHub does not enforce here: work through pull requests, merge 
 - The CodeQL workflow skips itself while the repository is private.
 - Private vulnerability reporting is off: security reports go to the Project Leader directly (`SECURITY.md`).
 - GitHub Actions on a private repository uses the account's free minutes (2,000 a month on the Free plan).
-- Vercel Hobby deploys a private repository only for commits by the Vercel account owner; previews for other authors need Vercel Pro or a deploy from GitHub Actions with the club's token (`docs/OPERATIONS.md`).
+- Vercel Hobby deploys a private repository only for commits by the Vercel account owner, so automatic deployments are off and the club account deploys `main` by hand (`docs/OPERATIONS.md`). No preview per pull request.
 - Revisit if the team grows, a direct push breaks `main`, or the repository becomes public (then option 1).

@@ -8,7 +8,7 @@ Date: 2026-11-15   Decided by: Project Leader
 - **Headers:** `next.config.ts` sets `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and hides `X-Powered-By`.
   The Content Security Policy needs a nonce and is built in PBI-011 (Sprint 2) using the Next.js CSP guide.
 - **Secrets:** gitleaks scans every PR; `.env*` is ignored; `fixtures/private/` is ignored; the secret key is used only by the admin client and the worker (ADR 0005).
-- **CI:** read-only token by default, actions pinned to full commit SHAs and kept current by Dependabot, CodeQL code scanning (free while the repository is public; a private repository needs GitHub Code Security).
+- **CI:** read-only token by default, actions pinned to full commit SHAs and kept current by Dependabot, CodeQL code scanning (free while the repository is public; skipped while it is private, ADR 0012).
 - **Database:** Row Level Security tests with pgTAP in CI (`supabase test db`) once `supabase/config.toml` exists.
 - **Environments:** Vercel preview deployments use a separate Supabase project and separate keys from production. A preview must never hold the production secret key.
 

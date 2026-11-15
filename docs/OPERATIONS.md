@@ -24,7 +24,7 @@ Rules:
 | Install Command | detected from `bun.lock` (`bun install`); if not, `bun install --frozen-lockfile` | same lockfile as CI (ADR 0002) |
 | Node.js version | 22.x (from `engines.node` in `web/package.json`, which overrides the dashboard) | same major as `.node-version` and CI |
 | Production branch | `main` | trunk-based |
-| Preview deployments | on for every PR; the Vercel bot comments the URL on the PR | reviewers test the real build |
+| Preview deployments | on for every PR; the Vercel bot comments the URL on the PR | reviewers test the real build. On Vercel Hobby a private repository deploys only the Vercel account owner's commits; other authors need Vercel Pro or a deploy from GitHub Actions (ADR 0012) |
 | Git fork protection | on | a fork PR cannot read our variables |
 | Custom domain | none yet (PBI-025) | |
 
@@ -56,7 +56,7 @@ Act in this order; do not wait to find out whether someone used it.
 4. **Check** Supabase logs and the Gemini usage page for use since the leak.
 5. **Record** what leaked, when, and what was rotated, and tell the Project Leader. Repeat for each environment the key was in.
 
-GitHub push protection and gitleaks in CI block most secrets before they land; this section is for the ones that get through.
+gitleaks in CI is the only automatic secret check (GitHub push protection is not available on this private repository, ADR 0012), and it runs after the push: rotate first, then clean up.
 
 ## Access
 

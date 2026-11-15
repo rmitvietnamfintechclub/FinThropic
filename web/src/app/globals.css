@@ -128,3 +128,8 @@
     @apply font-sans;
   }
 }
+
+/* Logo intro: visible only when public/brand/intro-gate.js chose "play" for this visit. */
+html[data-intro="play"] .intro-splash {
+  display: flex;
+}

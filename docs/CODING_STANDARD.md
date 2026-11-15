@@ -5,6 +5,9 @@ Layers call down only; never skip a layer. SQL in repositories, HTTP in routes a
 Validate every input; shape every output with a DTO. Other modules only through the interface.
 The frontend trusts nothing that arrives: a TypeScript type is erased at build time and checks no data. Every frontend service parses its response with the schema from `src/contracts/` (`getJson(path, schema)`); unknown fields are dropped and a wrong type becomes an error state. Render named fields only: never spread a response into props, never use `dangerouslySetInnerHTML`.
 
+## Shared UI
+Reusable UI lives in `src/common/ui/` (shadcn/ui, ADR 0006): no business logic, no data fetching. Add a component with `bun x shadcn@latest add <name>` from `web/`. A feature that needs a variant wraps the shared component in its own package; do not edit `common/ui` for one screen.
+
 ## Rules the tools enforce
 `bun run arch` fails on: client code importing `src/server`; one component package (`components/<group>/<Package>`) importing another; `src/contracts` importing anything except zod and other contracts; a module reaching into another module except through its `index.ts`; a lower layer importing a higher one; a controller skipping the service; the Supabase client outside repositories and `server/config`; a provider SDK outside `server/ai/adapters`; a model, DTO, validator, interface or constant importing a service, repository or controller; circular imports; unresolvable imports; production code importing a test file. ESLint fails on `process.env` outside `server/config` and on `dangerouslySetInnerHTML`.
 Do not work around a rule. If it is wrong, open an ADR.
@@ -32,6 +35,9 @@ Everyone writes tests for their own part. A permission test for every endpoint. 
 
 ## Lint
 Medium strict (ADR 0004). Fix warnings in the files you touch.
+
+## Documents
+A new route goes in `docs/ENDPOINTS.md`, a new table in `docs/MODELS.md`, a new pattern in an ADR (`docs/adr/0000-template.md`), all in the same PR.
 
 ## Done means
 Follows this standard, CI green, tests pass, reviewed by one person, preview deployed, docs updated if behaviour changed.

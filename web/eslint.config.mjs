@@ -15,6 +15,14 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/consistent-type-imports": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always"],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message:
+            "Never render raw HTML. Render named fields as text or through the safe Markdown component.",
+        },
+      ],
     },
   },
   {

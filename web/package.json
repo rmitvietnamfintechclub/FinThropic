@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "arch": "depcruise src --config .dependency-cruiser.cjs"
+    "arch": "depcruise src --config .dependency-cruiser.cjs",
+    "check:bundle": "bun scripts/check-bundle-secrets.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

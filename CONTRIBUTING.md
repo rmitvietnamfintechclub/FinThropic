@@ -13,7 +13,7 @@ Read `README.md` (run it, where things are) and `docs/CODING_STANDARD.md` (rules
 7. Fill "Open point: tried, found, chose" even if you kept the baseline.
 
 ## Rules
-- Nobody pushes to `main`. There are no branches per role, per person or per sprint.
+- Nobody pushes to `main` and nobody force pushes. GitHub does not block it on this private repository (ADR 0012), so this is a team rule: CI on `main` shows who broke it. There are no branches per role, per person or per sprint.
 - `main` always works. Work that is not finished before the sprint ends goes in behind a feature flag, switched off.
 - If you change a file in a folder owned by another role (see `docs/ARCHITECTURE.md`), say so in the PR. The owner reviews it. Keep the change minimal.
 - Reviews: the person in your role pair reviews. The Project Leader reviews auth, Row Level Security and permissions, `.github/`, architecture rules, ADRs and migrations (routed by CODEOWNERS).

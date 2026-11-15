@@ -8,7 +8,7 @@ How the app is deployed, rolled back and protected. Owner: Backend 2 (runbook), 
 | --- | --- | --- | --- | --- |
 | Local | `bun run dev` on a laptop | working copy | test project, or local `supabase start` | `web/.env.local` (git-ignored), copied from `.env.example` |
 | Preview | Vercel preview URL, one per pull request | every push to a PR branch | **test** project | Preview variables in Vercel: test URL, test anon key, test secret key, a separate Gemini key with a low quota |
-| Production | Vercel production URL (custom domain later, PBI-025) | `main` after a merge | **production** project | Production variables in Vercel; the production secret key exists only here |
+| Production | https://finthropic.vercel.app (custom domain `finthropic.rmitvietnamfintechclub.com` later, PBI-025) | `main` after a merge | **production** project | Production variables in Vercel; the production secret key exists only here |
 
 Rules:
 - Preview and Production variables are separate in Vercel. A preview never holds a production key.
@@ -16,6 +16,8 @@ Rules:
 - The app stops at start if a variable is missing or malformed (`server/config/env.ts`), so a misconfigured deploy fails loudly instead of running half-configured.
 
 ## Vercel project settings
+
+Project `finthropic` in the club's Vercel account (team "rmitvietnamfintechclub's projects", Hobby plan), connected to this repository. The club domain `rmitvietnamfintechclub.com` is managed in the same account (Vercel DNS), so the custom domain needs no DNS change outside Vercel. Until Supabase and Gemini keys exist (PBI-002, PBI-004), all four variables hold placeholders.
 
 | Setting | Value | Why |
 | --- | --- | --- |
@@ -26,6 +28,7 @@ Rules:
 | Production branch | `main` | trunk-based |
 | Preview deployments | on for every PR; the Vercel bot comments the URL on the PR | reviewers test the real build. On Vercel Hobby a private repository deploys only the Vercel account owner's commits; other authors need Vercel Pro or a deploy from GitHub Actions (ADR 0012) |
 | Git fork protection | on | a fork PR cannot read our variables |
+| Deployment protection | Vercel Authentication on preview and deployment URLs; the production URL is public | a preview link opens only for someone signed in to the club's Vercel account; share one with a Shareable Link |
 | Custom domain | none yet (PBI-025) | |
 
 HTTPS is forced by Vercel (308 redirect). `*.vercel.app` sends `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`; a custom domain gets `max-age=63072000` for its own host. The app adds the other security headers itself (`web/next.config.ts`, ADR 0010).

@@ -1,0 +1,25 @@
+[project]
+name = "finthropic-ingest"
+version = "0.1.0"
+description = "Indexing job: parse, chunk, enrich, embed, store"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Medium strict, same spirit as web ADR 0004: errors, imports, naming, bugbear, upgrades, simplifications.
+select = ["E", "F", "W", "I", "N", "B", "UP", "SIM", "C4", "PT"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+files = ["pipeline.py", "config.py", "models", "steps", "repositories", "ai", "tests"]
+mypy_path = "."
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

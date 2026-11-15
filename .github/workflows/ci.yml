@@ -15,7 +15,7 @@ permissions:
 
 # Actions are pinned to a full commit SHA (GitHub "Secure use reference"). The comment names the version.
 # Dependabot (github-actions, PBI-045.4) opens a PR to move the SHA when a new version is released.
-# Later PRs add their own checks: `arch` (PBI-045.1), `check:bundle` (PBI-045.5).
+# Later PRs add their own checks: `check:bundle` (PBI-045.5).
 jobs:
   pr-title:
     # Squash merge makes the PR title the commit on main, so the title must follow Conventional Commits.
@@ -64,6 +64,7 @@ jobs:
       - run: bun run format:check
       - run: bun run lint
       - run: bun run typecheck
+      - run: bun run arch
       - run: bun run test
       - run: bun run build
 

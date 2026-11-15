@@ -7,6 +7,8 @@ import { logger } from "@/server/utils/logger";
 // so a member can quote it when reporting a problem.
 export type Handler = (request: Request) => Promise<Response>;
 
+const SAFE_REQUEST_ID = /^[A-Za-z0-9-]{1,64}$/;
+
 function isNextControlFlow(error: unknown): boolean {
   const digest = (error as { digest?: unknown } | null)?.digest;
   return (
@@ -26,7 +28,9 @@ function withRequestId(response: Response, requestId: string): Response {
 
 export function withErrorHandler(handler: Handler): Handler {
   return async (request) => {
-    const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+    const incoming = request.headers.get("x-request-id");
+    // Keep a caller's id only if it is short and plain, so it cannot inject text into logs or headers.
+    const requestId = incoming && SAFE_REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
     try {
       return withRequestId(await handler(request), requestId);
     } catch (error) {

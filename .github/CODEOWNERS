@@ -1,0 +1,28 @@
+# Review routing (CONTRIBUTING.md and docs/ARCHITECTURE.md):
+# the Project Leader reviews security and cross-cutting paths; peers of the same role pair review the rest.
+# Code owners are asked for review automatically. Teammates' handles are added when they join the repository.
+
+# Default owner
+* @KhanhQNguyn
+
+# Security and cross-cutting paths: always the Project Leader
+/.github/                          @KhanhQNguyn
+/docs/adr/                         @KhanhQNguyn
+/web/.dependency-cruiser.cjs       @KhanhQNguyn
+/web/src/server/config/            @KhanhQNguyn
+/web/src/server/middlewares/       @KhanhQNguyn
+/web/src/server/modules/auth/      @KhanhQNguyn
+/web/src/contracts/                @KhanhQNguyn
+/supabase/migrations/              @KhanhQNguyn
+
+# Peer review by role pair. Uncomment with the right handle when each person joins:
+# /web/src/server/modules/accounts/   @backend-2-handle     (Backend 1's module, reviewed by Backend 2)
+# /web/src/server/modules/documents/  @backend-1-handle     (Backend 2's module, reviewed by Backend 1)
+# /web/src/server/modules/audit/      @backend-1-handle
+# /web/src/server/modules/chat/       @ai-rag-2-handle      (AI/RAG 1's module, reviewed by AI/RAG 2)
+# /web/src/server/ai/                 @ai-rag-2-handle
+# /ingest/                            @ai-rag-1-handle      (AI/RAG 2's worker, reviewed by AI/RAG 1)
+# /web/src/components/chat/           @frontend-2-handle    (Frontend 1's screens, reviewed by Frontend 2)
+# /web/src/components/documents/      @frontend-1-handle    (Frontend 2's screens, reviewed by Frontend 1)
+# /web/src/components/accounts/       @frontend-1-handle
+# /web/src/components/audit/          @frontend-1-handle

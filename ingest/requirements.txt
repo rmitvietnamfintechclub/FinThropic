@@ -1,1 +1,2 @@
 # Runtime dependencies are added here per PBI (PDF reader, Supabase client, embedding SDK).
+pymupdf>=2,<3

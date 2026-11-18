@@ -113,6 +113,18 @@ def partly_repeated_pdf(path: str) -> str:
     return path
 
 
+def near_empty_pdf(path: str) -> str:
+    """A real slide followed by a divider that only says thank you."""
+    doc = pymupdf.open()  # type: ignore[no-untyped-call]
+    first = doc.new_page()
+    first.insert_text((72, 90), "Budget rules", fontsize=16)
+    first.insert_textbox(_rect(72, 110, 520, 700), BODY, fontsize=10)
+    second = doc.new_page()
+    second.insert_text((72, 90), "Thank you", fontsize=20)
+    doc.save(path)  # type: ignore[no-untyped-call]
+    return path
+
+
 def corrupt_pdf(path: str) -> str:
     """A file that is not a PDF at all."""
     with open(path, "wb") as handle:

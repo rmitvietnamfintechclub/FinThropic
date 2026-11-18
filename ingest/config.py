@@ -4,6 +4,9 @@ import os
 
 EMBEDDING_DIMENSIONS = 1536
 CHUNK_TARGET_TOKENS = 500
+CHARS_PER_TOKEN = 4  # approximation: the tokenizer is not a dependency, 500 tokens is ~2,000 chars
+MIN_CHUNK_TOKENS = 5  # a smaller leftover piece is dropped when the page split into several
+NEAR_EMPTY_WORDS = 8  # a page below this word count is a divider, so it folds into its neighbour
 LOW_TEXT_WORDS = 25  # a page with pictures and fewer words than this gets a warning
 MAX_REPEATED_LINE_WORDS = 12  # longer lines repeated on most pages are body text, not a footer
 MIN_PAGES_FOR_REPEAT_RULE = 3  # below this "more than half of the pages" says nothing

@@ -12,6 +12,7 @@ import { thresholdStep } from "./steps/threshold.step";
 import type { RagContext, RagStep } from "./types";
 
 // Pipes and filters: the runner chains the steps in order and times each one.
+// A step that sets outcome "not_available" ends the run: the steps after it never run, so no model call.
 export const defaultSteps: RagStep[] = [
   sessionStep,
   rewriteFollowUpStep,
@@ -34,6 +35,7 @@ export async function runPipeline(
     const started = performance.now();
     ctx = await step.run(ctx);
     ctx.timings[step.name] = Math.round(performance.now() - started);
+    if (ctx.outcome === "not_available") break;
   }
   return ctx;
 }

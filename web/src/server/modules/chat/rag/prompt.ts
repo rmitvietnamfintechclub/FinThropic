@@ -2,7 +2,7 @@ import "server-only";
 import { FALLBACK_REPLY } from "../constants/chat.constants";
 import type { RagContext } from "./types";
 
-/** Bump when the wording below changes, so eval results can name the prompt they ran with. */
+/** Bump when the wording below changes, so a later eval run can say which prompt it measured. */
 export const PROMPT_VERSION = "answer-v1";
 
 export const SYSTEM_PROMPT = `You answer questions from members of a student fintech club using only the numbered passages from the club documents.
@@ -18,8 +18,17 @@ export function buildPrompt(question: string, chunks: RagContext["chunks"]): str
   const passages = chunks
     .map(
       (chunk, i) =>
-        `<passage number="${i + 1}" document="${chunk.documentName}" page="${chunk.page}">\n${chunk.text}\n</passage>`,
+        `<passage number="${i + 1}" document="${escapeMarkup(chunk.documentName)}" page="${chunk.page}">\n${escapeMarkup(chunk.text)}\n</passage>`,
     )
     .join("\n\n");
   return `Passages:\n\n${passages}\n\nQuestion: ${question}`;
+}
+
+/** Document text cannot close a passage tag or break out of an attribute, so rule 4 keeps its frame. */
+function escapeMarkup(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }

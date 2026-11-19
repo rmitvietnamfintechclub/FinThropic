@@ -1,5 +1,4 @@
 import "server-only";
-import { geminiLanguageModel } from "@/server/ai/adapters/gemini";
 import { ProviderError } from "@/server/ai/errors";
 import type { LanguageModel } from "@/server/ai/ports";
 import { FALLBACK_REPLY } from "../../constants/chat.constants";
@@ -30,8 +29,6 @@ export function createGenerateStep(model: LanguageModel): RagStep {
     },
   };
 }
-
-export const generateStep = createGenerateStep(geminiLanguageModel);
 
 async function callModel(model: LanguageModel, input: Parameters<LanguageModel["generate"]>[0]) {
   try {

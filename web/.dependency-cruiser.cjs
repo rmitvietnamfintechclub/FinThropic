@@ -84,10 +84,11 @@ module.exports = {
     },
     {
       name: "provider-sdk-only-in-adapters",
-      comment: "No direct call to Gemini or any provider: use the ports in src/server/ai/ports.ts.",
+      comment:
+        "No direct call to the AI SDK or any provider: use the ports in src/server/ai/ports.ts (ADR 0014).",
       severity: "error",
       from: { pathNot: "^src/server/ai/adapters/" },
-      to: { path: "node_modules/@google/" },
+      to: { path: "node_modules/(ai|@ai-sdk|@google)/" },
     },
     {
       name: "no-circular",

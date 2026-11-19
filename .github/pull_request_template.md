@@ -10,6 +10,7 @@ Closes #<sub-issue number>   Parent PBI: PBI-0xx   Role: <your role>
 - [ ] Test cases pass: TC1, TC2
 - [ ] Tests added or updated, and a permission test for every endpoint touched
 - [ ] A frontend service parses its response with the contract schema (`src/contracts/`), and a test shows an unknown field is dropped and a wrong type is rejected
+- [ ] Screens match the approved wireframe (PBI-047) at 360 px and 1280 px; any change from it is explained here
 - [ ] Docs updated if behaviour changed (docs/ENDPOINTS.md, docs/MODELS.md, an ADR for a new pattern)
 
 ## Open point: tried, found, chose

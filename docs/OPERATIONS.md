@@ -26,7 +26,7 @@ Project `finthropic` in the club's Vercel account (team "rmitvietnamfintechclub'
 | Install Command | detected from `bun.lock` (`bun install`); if not, `bun install --frozen-lockfile` | same lockfile as CI (ADR 0002) |
 | Node.js version | 22.x (from `engines.node` in `web/package.json`, which overrides the dashboard) | same major as `.node-version` and CI |
 | Production branch | `main` | trunk-based |
-| Automatic deployments | off (`web/vercel.json`, `git.deploymentEnabled: false`) | on Vercel Hobby a private repository deploys only the account owner's commits, so automatic deploys of everyone else's commits were blocked and left a red check on every PR (ADR 0012) |
+| Automatic deployments | off (`web/vercel.json`, `git.deploymentEnabled: false`) | set while the repository was private, when Vercel Hobby deployed only the account owner's commits (ADR 0012); kept off after the repository became public (ADR 0013), revisit |
 | Git fork protection | on | a fork PR cannot read our variables |
 | Deployment protection | Vercel Authentication on preview and deployment URLs; the production URL is public | a preview link opens only for someone signed in to the club's Vercel account; share one with a Shareable Link |
 | Custom domain | none yet (PBI-025) | |
@@ -67,7 +67,7 @@ Act in this order; do not wait to find out whether someone used it.
 4. **Check** Supabase logs and the Gemini usage page for use since the leak.
 5. **Record** what leaked, when, and what was rotated, and tell the Project Leader. Repeat for each environment the key was in.
 
-gitleaks in CI is the only automatic secret check (GitHub push protection is not available on this private repository, ADR 0012), and it runs after the push: rotate first, then clean up.
+GitHub push protection blocks a push that contains a known secret format, and gitleaks in CI scans every pull request after the push (ADR 0013). If either fires: rotate first, then clean up.
 
 ## Access
 

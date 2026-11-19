@@ -1,25 +1,18 @@
 import "server-only";
 import { z } from "zod";
 import {
-  AI_PROVIDERS,
   type AiModelId,
   DEFAULT_CHAT_MODEL,
   DEFAULT_EMBEDDING_MODEL,
+  parseAiModelId,
 } from "@/server/ai/constants/gateway.constants";
 
 // One place that knows which environment variables the app needs.
 // A missing or empty variable stops the app and names the variable (PBI-001, AC3).
 
 /** "provider:model" with a provider the AI gateway registers, so a typo fails at start-up, not on the first question. */
-function isModelId(value: unknown): value is AiModelId {
-  if (typeof value !== "string") return false;
-  const separator = value.indexOf(":");
-  const provider = value.slice(0, separator);
-  return (
-    separator > 0 && separator < value.length - 1 && AI_PROVIDERS.some((name) => name === provider)
-  );
-}
-const modelId = (fallback: AiModelId) => z.custom<AiModelId>(isModelId).default(fallback);
+const modelId = (fallback: AiModelId) =>
+  z.custom<AiModelId>((value) => parseAiModelId(value) !== undefined).default(fallback);
 
 const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),

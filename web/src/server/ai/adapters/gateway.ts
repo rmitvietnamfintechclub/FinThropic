@@ -1,7 +1,7 @@
 import "server-only";
 import { createGoogle } from "@ai-sdk/google";
 import { APICallError, createProviderRegistry, embedMany, generateText } from "ai";
-import { getEnv } from "@/server/config/env";
+import { type Env, getEnv } from "@/server/config/env";
 import { logger } from "@/server/utils/logger";
 import {
   AI_ATTEMPTS,
@@ -9,40 +9,46 @@ import {
   type AiModelId,
   type AiProvider,
   EMBEDDING_DIMENSIONS,
+  parseAiModelId,
 } from "../constants/gateway.constants";
 import { ProviderError } from "../errors";
 import type { EmbedTask, Embedder, LanguageModel } from "../ports";
 
-// The AI gateway, on the Vercel AI SDK (ADR 0014). The only file that may import `ai` or `@ai-sdk/*`. Owner: AI/RAG 1.
+// The AI gateway, on the Vercel AI SDK (ADR 0014). Only adapters/ (this file and its test) may import `ai` or `@ai-sdk/*`. Owner: AI/RAG 1.
 // Models are "provider:model" strings from AI_EMBEDDING_MODEL and AI_CHAT_MODEL, so switching models is an env change.
 // Embedding rules: task type document for chunks and query for questions, same model on both sides,
 // 1,536 dimensions, normalized, and the model name and pipeline version stored with each chunk.
 // Never log the prompt, the question, document text or the key: logs carry the operation, model, attempt and status only.
 
 type EmbedOptions = Parameters<typeof embedMany>[0]["providerOptions"];
+type Provider = Parameters<typeof createProviderRegistry>[0][string];
 
-/** Provider-specific embedding options. The vector size goes through the SDK's own `dimensions` setting. */
-const EMBED_OPTIONS: Record<AiProvider, (task: EmbedTask) => EmbedOptions> = {
-  google: (task) => ({
-    google: { taskType: task === "query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT" },
-  }),
+/**
+ * One entry per provider: how to build it from the environment, and its embedding options. The vector size goes
+ * through the SDK's own `dimensions` setting, so only provider-specific options live here.
+ */
+const PROVIDERS: Record<
+  AiProvider,
+  { create: (env: Env) => Provider; embedOptions: (task: EmbedTask) => EmbedOptions }
+> = {
+  google: {
+    create: (env) => createGoogle({ apiKey: env.GEMINI_API_KEY }),
+    embedOptions: (task) => ({
+      google: { taskType: task === "query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT" },
+    }),
+  },
 };
 
 function createRegistry() {
   const env = getEnv();
-  return createProviderRegistry({
-    google: createGoogle({ apiKey: env.GEMINI_API_KEY }),
-  } satisfies Record<AiProvider, unknown>);
+  const entries = Object.entries(PROVIDERS).map(([name, entry]) => [name, entry.create(env)]);
+  return createProviderRegistry(Object.fromEntries(entries) as Record<AiProvider, Provider>);
 }
 
 let registry: ReturnType<typeof createRegistry> | undefined;
 function providers() {
   registry ??= createRegistry();
   return registry;
-}
-
-function providerOf(model: AiModelId): AiProvider {
-  return model.slice(0, model.indexOf(":")) as AiProvider;
 }
 
 /** The embedding model in use and its vector size. Store `model` with each chunk; the eval keys its cache on it. */
@@ -64,8 +70,7 @@ async function withRetry<T>(
   model: AiModelId,
   call: (signal: AbortSignal) => Promise<T>,
 ) {
-  let kind: ProviderError["kind"] = "failure";
-  for (let attempt = 1; attempt <= AI_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; ; attempt += 1) {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, reject) => {
@@ -77,16 +82,23 @@ async function withRetry<T>(
     try {
       return await Promise.race([call(controller.signal), timeout]);
     } catch (error) {
-      kind = error === TIMED_OUT ? "timeout" : "failure";
-      const status = APICallError.isInstance(error) ? error.statusCode : undefined;
-      logger.warn("ai call failed", { operation, model, attempt, kind, status });
-      const retryable = kind === "timeout" || (APICallError.isInstance(error) && error.isRetryable);
-      if (!retryable) break;
+      const apiError = APICallError.isInstance(error) ? error : undefined;
+      const kind = error === TIMED_OUT ? "timeout" : "failure";
+      logger.warn("ai call failed", {
+        operation,
+        model,
+        attempt,
+        kind,
+        status: apiError?.statusCode,
+      });
+      const retryable = kind === "timeout" || apiError?.isRetryable === true;
+      if (!retryable || attempt === AI_ATTEMPTS) {
+        throw new ProviderError(kind, `AI ${operation} ${kind} on ${model}`);
+      }
     } finally {
       clearTimeout(timer);
     }
   }
-  throw new ProviderError(kind, `AI ${operation} ${kind} on ${model}`);
 }
 
 /** Some models (gemini-embedding-001 among them) normalize only their full-size output, so a shorter vector is scaled here. */
@@ -102,6 +114,8 @@ export const gatewayEmbedder: Embedder = {
   async embed(texts, task) {
     if (texts.length === 0) return [];
     const modelId = getEnv().AI_EMBEDDING_MODEL;
+    const parsed = parseAiModelId(modelId);
+    if (!parsed) throw new ProviderError("failure", `AI embed model ${modelId} is not registered`);
     const model = providers().embeddingModel(modelId);
     // Only the provider call is retried: a response with the wrong shape will not fix itself on a second paid call.
     const { embeddings } = await withRetry("embed", modelId, (abortSignal) =>
@@ -109,7 +123,7 @@ export const gatewayEmbedder: Embedder = {
         model,
         values: texts,
         dimensions: EMBEDDING_DIMENSIONS,
-        providerOptions: EMBED_OPTIONS[providerOf(modelId)](task),
+        providerOptions: PROVIDERS[parsed.provider].embedOptions(task),
         maxRetries: 0,
         abortSignal,
       }),

@@ -24,8 +24,8 @@ call shape, and a model named by a `provider:model` string.
 
 The Vercel AI SDK. `web/src/server/ai/adapters/gateway.ts` holds the registry and is the only file that may import `ai`
 or `@ai-sdk/*` (`provider-sdk-only-in-adapters`). Models come from `AI_EMBEDDING_MODEL` and `AI_CHAT_MODEL`, checked
-at start-up against the registered providers. Adding a provider is one package, one name in `AI_PROVIDERS`, one registry
-line and one entry in the embedding options map. The gateway keeps its own per-attempt timeout and one retry
+at start-up against the registered providers. Adding a provider is one package, one name in `AI_PROVIDERS` and one entry in the
+`PROVIDERS` map (how to build it and its embedding options). The gateway keeps its own per-attempt timeout and one retry
 (`maxRetries: 0` in the SDK) because the SDK never retries a hang. The Python worker can use LiteLLM with the same
 `provider:model` names later; that is not part of this decision.
 

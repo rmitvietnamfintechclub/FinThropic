@@ -1,8 +1,8 @@
 # Security policy
 
 ## Reporting a vulnerability
-Do not open an issue. Message the Project Leader or the Head of Technology of the RMIT Vietnam FinTech Club directly
-(GitHub's private reporting is not available on this private repository, ADR 0012). Say what you
+Do not open an issue. Use "Report a vulnerability" on the repository's Security tab, or message the Project Leader or the
+Head of Technology of the RMIT Vietnam FinTech Club directly. Say what you
 found, how to reproduce it, and what it could expose. You will get an answer within 5 working days.
 
 ## What counts

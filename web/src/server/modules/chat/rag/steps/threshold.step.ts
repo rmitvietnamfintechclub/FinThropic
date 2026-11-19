@@ -11,8 +11,7 @@ import type { RagContext, RagStep } from "../types";
 export const thresholdStep: RagStep = {
   name: "threshold",
   async run(ctx: RagContext): Promise<RagContext> {
-    const top = Math.max(...ctx.chunks.map((chunk) => chunk.score));
-    if (ctx.chunks.length > 0 && top >= RELEVANCE_THRESHOLD) return ctx;
+    if (ctx.chunks.some((chunk) => chunk.score >= RELEVANCE_THRESHOLD)) return ctx;
     return { ...ctx, outcome: "not_available", answer: FALLBACK_REPLY };
   },
 };

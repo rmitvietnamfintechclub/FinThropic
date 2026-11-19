@@ -25,10 +25,25 @@ describe("answering pipeline", () => {
   });
 
   it("stops after a step sets the outcome to not available", async () => {
-    // The search placeholder finds no chunk, so the threshold step ends the run.
-    const ctx = await runPipeline({ question: "How do I request budget?", history: [] });
+    const ran: string[] = [];
+    const record = (name: string): RagStep => ({
+      name,
+      run: async (ctx) => {
+        ran.push(name);
+        return ctx;
+      },
+    });
+    const refuse: RagStep = {
+      name: "refuse",
+      run: async (ctx) => ({ ...ctx, outcome: "not_available" }),
+    };
+    const ctx = await runPipeline({ question: "q", history: [] }, [
+      record("before"),
+      refuse,
+      record("after"),
+    ]);
     expect(ctx.outcome).toBe("not_available");
-    const ran = defaultSteps.slice(0, defaultSteps.findIndex((s) => s.name === "threshold") + 1);
-    expect(Object.keys(ctx.timings)).toEqual(ran.map((s) => s.name));
+    expect(ran).toEqual(["before"]);
+    expect(Object.keys(ctx.timings)).toEqual(["before", "refuse"]);
   });
 });

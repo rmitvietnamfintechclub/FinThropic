@@ -52,4 +52,4 @@ A new route goes in `docs/ENDPOINTS.md`, a new table in `docs/MODELS.md`, a new 
 ## Done means
 Follows this standard, CI green, tests pass, approved by your role pair (1 approval, required by the ruleset on `main`), docs updated if behaviour changed, and a screen matches its approved wireframe (PBI-047) at 360 px and 1280 px, with any change from it agreed in the PR. Production is deployed from `main` by hand (`docs/OPERATIONS.md`).
 
-The accounts KhanhQNguyn and rmitvietnamfintechclub may bypass the approval rule.
+The account rmitvietnamfintechclub may bypass the approval rule.

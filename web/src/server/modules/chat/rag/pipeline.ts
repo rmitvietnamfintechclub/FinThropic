@@ -1,5 +1,5 @@
 import "server-only";
-import { geminiLanguageModel } from "@/server/ai/adapters/gemini";
+import { gatewayLanguageModel } from "@/server/ai/adapters/gateway";
 import { checkCitationsStep } from "./steps/checkCitations.step";
 import { embedQuestionStep } from "./steps/embedQuestion.step";
 import { createGenerateStep } from "./steps/generate.step";
@@ -22,7 +22,7 @@ export const defaultSteps: RagStep[] = [
   mergeRrfStep,
   rerankStep,
   thresholdStep,
-  createGenerateStep(geminiLanguageModel),
+  createGenerateStep(gatewayLanguageModel),
   checkCitationsStep,
   streamStep,
 ];

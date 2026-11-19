@@ -59,26 +59,28 @@ export function cachedEmbedder(
   inner: Embedder,
   model: string,
   cache: EmbeddingCache,
-  stats: EmbedStats = { fromCache: 0, embedded: 0 },
 ): Embedder & { stats: EmbedStats } {
+  const stats: EmbedStats = { fromCache: 0, embedded: 0 };
   return {
     stats,
     async embed(texts, task) {
       const keys = texts.map((text) => cacheKey(model, task, text));
-      const notCached = keys.filter((key) => cache.get(key) === undefined);
-      const missing = [...new Set(notCached)];
-      const textByKey = new Map(keys.map((key, i) => [key, texts[i]]));
-      stats.fromCache += texts.length - notCached.length;
-      for (let start = 0; start < missing.length; start += EMBED_BATCH_SIZE) {
-        const batch = missing.slice(start, start + EMBED_BATCH_SIZE);
+      const missing = new Map<string, string>();
+      keys.forEach((key, i) => {
+        if (cache.get(key) === undefined) missing.set(key, texts[i]);
+        else stats.fromCache += 1;
+      });
+      const entries = [...missing];
+      for (let start = 0; start < entries.length; start += EMBED_BATCH_SIZE) {
+        const batch = entries.slice(start, start + EMBED_BATCH_SIZE);
         const vectors = await inner.embed(
-          batch.map((key) => textByKey.get(key) as string),
+          batch.map(([, text]) => text),
           task,
         );
         if (vectors.length !== batch.length) {
           throw new Error(`embedder returned ${vectors.length} vectors for ${batch.length} texts`);
         }
-        batch.forEach((key, i) => cache.set(key, vectors[i]));
+        batch.forEach(([key], i) => cache.set(key, vectors[i]));
         stats.embedded += batch.length;
         cache.save();
       }

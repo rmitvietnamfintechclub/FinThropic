@@ -4,7 +4,6 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import type { Embedder } from "@/server/ai/ports";
-import { EMBEDDER_MODELS, type EmbedderName } from "./constants";
 import { EmbeddingCache, cachedEmbedder } from "./embeddingCache";
 import { evaluateRetrieval } from "./evaluate";
 import { formatReport } from "./formatReport";
@@ -24,11 +23,28 @@ function git(args: string[]): string | null {
   }
 }
 
-async function loadEmbedder(name: EmbedderName): Promise<Embedder> {
-  // Loaded on demand so a fake run never touches the Gemini adapter or its configuration.
-  if (name === "gemini") return (await import("@/server/ai/adapters/gemini")).geminiEmbedder;
-  return (await import("@/server/ai/adapters/fake")).fakeWordEmbedder;
-}
+/**
+ * The embedders this script can use. `model` is part of the cache key: change it when the model or
+ * its settings change, so old vectors are not reused. Adapters load on demand, so a fake run never
+ * touches the Gemini adapter or its configuration.
+ * TODO(#65): build the Gemini label from the model and dimensions the adapter exports.
+ */
+const EMBEDDERS = new Map<string, { model: string; load: () => Promise<Embedder> }>([
+  [
+    "fake",
+    {
+      model: "fake-word-hash-v1",
+      load: async () => (await import("@/server/ai/adapters/fake")).fakeWordEmbedder,
+    },
+  ],
+  [
+    "gemini",
+    {
+      model: "gemini-embedding-001@1536",
+      load: async () => (await import("@/server/ai/adapters/gemini")).geminiEmbedder,
+    },
+  ],
+]);
 
 async function main(): Promise<number> {
   const { values } = parseArgs({
@@ -48,12 +64,13 @@ async function main(): Promise<number> {
     );
     return 2;
   }
-  if (!Object.hasOwn(EMBEDDER_MODELS, values.embedder)) {
-    process.stderr.write(`--embedder must be one of: ${Object.keys(EMBEDDER_MODELS).join(", ")}\n`);
+  const embedderName = values.embedder;
+  const choice = EMBEDDERS.get(embedderName);
+  if (!choice) {
+    process.stderr.write(`--embedder must be one of: ${[...EMBEDDERS.keys()].join(", ")}\n`);
     return 2;
   }
-  const embedderName = values.embedder as EmbedderName;
-  const model = EMBEDDER_MODELS[embedderName];
+  const { model } = choice;
 
   const chunksPath = resolve(values.chunks);
   const questionsPath = resolve(values.questions);
@@ -66,7 +83,7 @@ async function main(): Promise<number> {
   checkInputs(chunks, questions);
 
   const cache = new EmbeddingCache(values["no-cache"] ? null : resolve(values.cache));
-  const embedder = cachedEmbedder(await loadEmbedder(embedderName), model, cache);
+  const embedder = cachedEmbedder(await choice.load(), model, cache);
   const report = await evaluateRetrieval(chunks, questions, embedder);
 
   const commit = git(["rev-parse", "HEAD"]) ?? "unknown";

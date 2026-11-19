@@ -83,17 +83,17 @@ export function checkInputs(chunks: ChunkRow[], questions: QuestionRow[]): void 
   for (const id of duplicates(questions.map((question) => question.id))) {
     problems.push(`questions: duplicate id "${id}"`);
   }
-  const pages = new Set(chunks.map((chunk) => pageKey(chunk.documentName, chunk.page)));
-  for (const question of questions) {
-    if (question.gold && !pages.has(pageKey(question.gold.documentName, question.gold.page))) {
-      problems.push(
-        `questions: "${question.id}": gold ${question.gold.documentName} page ${question.gold.page} has no chunk`,
-      );
+  for (const { id, gold } of questions) {
+    if (gold && !chunks.some((chunk) => isOnPage(chunk, gold))) {
+      problems.push(`questions: "${id}": gold ${gold.documentName} page ${gold.page} has no chunk`);
     }
   }
   if (problems.length > 0) throw new InputError(problems);
 }
 
-export function pageKey(documentName: string, page: number): string {
-  return JSON.stringify([documentName, page]);
+export type Gold = z.infer<typeof goldSchema>;
+
+/** A chunk answers a question when it sits on the gold document and page. */
+export function isOnPage(chunk: Pick<ChunkRow, "documentName" | "page">, gold: Gold): boolean {
+  return chunk.documentName === gold.documentName && chunk.page === gold.page;
 }

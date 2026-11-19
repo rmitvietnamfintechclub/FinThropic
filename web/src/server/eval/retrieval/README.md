@@ -37,7 +37,7 @@ Try it on the synthetic example:
 bun run eval:retrieval --chunks src/server/eval/retrieval/example/chunks.jsonl --questions src/server/eval/retrieval/example/questions.jsonl
 ```
 
-The script is `bun --conditions=react-server src/server/eval/retrieval/run.ts`. Every file under `src/server/` starts with `import "server-only"`, which throws in a plain bun or node process; the `react-server` condition makes that package resolve to its empty build, as it does inside Next.js. With `gemini`, Bun loads `web/.env.local` like the app does. If the model or its settings change, update its label in `constants.ts` so the cache does not hand back old vectors.
+The script is `bun --conditions=react-server src/server/eval/retrieval/run.ts`. Every file under `src/server/` starts with `import "server-only"`, which throws in a plain bun or node process; the `react-server` condition makes that package resolve to its empty build, as it does inside Next.js. The report goes to stdout with `process.stdout.write`, not through `logger`: it is a terminal table for the person running the script, and it holds ids and numbers only, never question or chunk text. With `gemini`, Bun loads `web/.env.local` like the app does. If the model or its settings change, update its label in `constants.ts` so the cache does not hand back old vectors.
 
 ## Input formats
 

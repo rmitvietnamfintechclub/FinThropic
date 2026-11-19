@@ -1,7 +1,7 @@
 import "server-only";
 import type { Embedder } from "@/server/ai/ports";
 import { RECALL_AT, TOP_K_SAVED } from "./constants";
-import type { ChunkRow, QuestionRow } from "./inputs";
+import { isOnPage, type ChunkRow, type QuestionRow } from "./inputs";
 import {
   bestCutoff,
   cosine,
@@ -63,9 +63,7 @@ export async function evaluateRetrieval(
       // Stable sort: equal scores keep file order, so a run is repeatable.
       .sort((a, b) => b.similarity - a.similarity);
     const gold = question.gold;
-    const hitIndex = gold
-      ? ranked.findIndex((r) => r.documentName === gold.documentName && r.page === gold.page)
-      : -1;
+    const hitIndex = gold ? ranked.findIndex((r) => isOnPage(r, gold)) : -1;
     return {
       id: question.id,
       gold,

@@ -31,7 +31,10 @@ function gemini(): GoogleGenAI {
 
 const TIMED_OUT = Symbol("timed out");
 
-/** Runs `call` with a timeout per attempt and one retry. Throws ProviderError when every attempt fails. */
+/**
+ * Runs `call` with a timeout per attempt and one retry. Throws ProviderError when every attempt fails.
+ * The race is on purpose: it is a hard deadline even if the SDK or fetch ignores the abort signal.
+ */
 async function withRetry<T>(operation: string, call: (signal: AbortSignal) => Promise<T>) {
   let kind: ProviderError["kind"] = "failure";
   for (let attempt = 1; attempt <= GEMINI_ATTEMPTS; attempt += 1) {
@@ -59,15 +62,18 @@ async function withRetry<T>(operation: string, call: (signal: AbortSignal) => Pr
 /** gemini-embedding-001 normalizes only its full 3,072-dimension output, so a shorter vector is scaled here. */
 function normalize(values: number[]): number[] {
   const norm = Math.hypot(...values);
-  if (!Number.isFinite(norm) || norm === 0) throw new Error("embedding has no length");
+  if (!Number.isFinite(norm) || norm === 0) {
+    throw new ProviderError("failure", "Gemini embed returned a zero vector");
+  }
   return values.map((value) => value / norm);
 }
 
 export const geminiEmbedder: Embedder = {
   async embed(texts, task) {
     if (texts.length === 0) return [];
-    return withRetry("embed", async (abortSignal) => {
-      const response = await gemini().models.embedContent({
+    // Only the SDK call is retried: a response with the wrong shape will not fix itself on a second paid call.
+    const response = await withRetry("embed", (abortSignal) =>
+      gemini().models.embedContent({
         model: GEMINI_EMBEDDING_MODEL,
         contents: texts,
         config: {
@@ -75,28 +81,32 @@ export const geminiEmbedder: Embedder = {
           outputDimensionality: EMBEDDING_DIMENSIONS,
           abortSignal,
         },
-      });
-      const embeddings = response.embeddings ?? [];
-      if (embeddings.length !== texts.length) throw new Error("wrong number of embeddings");
-      return embeddings.map(({ values }) => {
-        if (values?.length !== EMBEDDING_DIMENSIONS) throw new Error("wrong embedding size");
-        return normalize(values);
-      });
+      }),
+    );
+    const embeddings = response.embeddings ?? [];
+    if (embeddings.length !== texts.length) {
+      throw new ProviderError("failure", "Gemini embed returned the wrong number of vectors");
+    }
+    return embeddings.map(({ values }) => {
+      if (values?.length !== EMBEDDING_DIMENSIONS) {
+        throw new ProviderError("failure", "Gemini embed returned a vector of the wrong size");
+      }
+      return normalize(values);
     });
   },
 };
 
 export const geminiLanguageModel: LanguageModel = {
   async generate({ system, prompt }) {
-    return withRetry("generate", async (abortSignal) => {
-      const response = await gemini().models.generateContent({
+    const response = await withRetry("generate", (abortSignal) =>
+      gemini().models.generateContent({
         model: GEMINI_GENERATION_MODEL,
         contents: prompt,
         config: { systemInstruction: system, abortSignal },
-      });
-      const text = response.text;
-      if (!text) throw new Error("empty answer");
-      return { text, tokens: response.usageMetadata?.totalTokenCount ?? 0 };
-    });
+      }),
+    );
+    const text = response.text;
+    if (!text) throw new ProviderError("failure", "Gemini generate returned no text");
+    return { text, tokens: response.usageMetadata?.totalTokenCount ?? 0 };
   },
 };

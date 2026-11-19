@@ -128,6 +128,7 @@ describe("geminiEmbedder", () => {
 
     expect(error).toBeInstanceOf(ProviderError);
     expect(error.kind).toBe("failure");
+    expect(sdk.embedContent).toHaveBeenCalledTimes(1);
   });
 });
 

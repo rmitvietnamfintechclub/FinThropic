@@ -33,5 +33,8 @@ at start-up against the registered providers. Adding a provider is one package, 
 
 Trying another model is an environment change. Changing `AI_EMBEDDING_MODEL` means re-indexing every chunk: vectors
 from two models do not compare, and the model name is stored with each chunk so a mix can be found. The vector size
-stays 1,536 (the database column), so a new embedding model must support that size. Check later: whether the SDK's
+stays 768 (the database column), so a new embedding model must support that size. Check later: whether the SDK's
 `timeout` option can replace our own deadline, and whether the worker should share model names through LiteLLM.
+
+The owner chose 768 on 19 Nov 2026 over the 1,536 in issue #65. Re-measure it with the retrieval smoke eval (PR #218)
+once club documents are indexed; changing it later means re-indexing every chunk.

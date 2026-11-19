@@ -24,8 +24,8 @@ export function parseAiModelId(
 export const DEFAULT_EMBEDDING_MODEL: AiModelId = "google:gemini-embedding-001";
 export const DEFAULT_CHAT_MODEL: AiModelId = "google:gemini-3.5-flash-lite";
 
-/** Matches the vector(1536) column. Changing it needs a migration and a re-index. */
-export const EMBEDDING_DIMENSIONS = 1536;
+/** Matches the vector(768) column. Changing it needs a migration and a re-index. */
+export const EMBEDDING_DIMENSIONS = 768;
 
 /** Per attempt. A call gets one retry, so the worst case is twice this. */
 export const AI_TIMEOUT_MS = 15_000;

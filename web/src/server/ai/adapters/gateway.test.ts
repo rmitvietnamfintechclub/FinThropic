@@ -125,7 +125,7 @@ describe("gateway registry", () => {
 });
 
 describe("gatewayEmbedder", () => {
-  it("returns one unit-length vector of 1,536 numbers per text", async () => {
+  it("returns one unit-length vector of 768 numbers per text", async () => {
     provider.doEmbed.mockResolvedValue(embedResult(rawVector(1), rawVector(2)));
 
     const vectors = await gatewayEmbedder.embed(["first chunk", "second chunk"], "document");
@@ -140,7 +140,7 @@ describe("gatewayEmbedder", () => {
   it.each([
     ["query", "RETRIEVAL_QUERY"],
     ["document", "RETRIEVAL_DOCUMENT"],
-  ] as const)("sends task type %s as %s with 1,536 dimensions", async (task, taskType) => {
+  ] as const)("sends task type %s as %s with 768 dimensions", async (task, taskType) => {
     provider.doEmbed.mockResolvedValue(embedResult(rawVector(1)));
 
     await gatewayEmbedder.embed([QUESTION], task);

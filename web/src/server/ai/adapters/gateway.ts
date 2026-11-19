@@ -17,7 +17,7 @@ import type { EmbedTask, Embedder, LanguageModel } from "../ports";
 // The AI gateway, on the Vercel AI SDK (ADR 0014). Only adapters/ (this file and its test) may import `ai` or `@ai-sdk/*`. Owner: AI/RAG 1.
 // Models are "provider:model" strings from AI_EMBEDDING_MODEL and AI_CHAT_MODEL, so switching models is an env change.
 // Embedding rules: task type document for chunks and query for questions, same model on both sides,
-// 1,536 dimensions, normalized, and the model name and pipeline version stored with each chunk.
+// 768 dimensions, normalized, and the model name and pipeline version stored with each chunk.
 // Never log the prompt, the question, document text or the key: logs carry the operation, model, attempt and status only.
 
 type EmbedOptions = Parameters<typeof embedMany>[0]["providerOptions"];

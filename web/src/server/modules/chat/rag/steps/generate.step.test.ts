@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+import { ProviderError } from "@/server/ai/errors";
+import type { LanguageModel } from "@/server/ai/ports";
+import { FALLBACK_REPLY } from "../../constants/chat.constants";
+import { SYSTEM_PROMPT } from "../prompt";
+import type { RagContext } from "../types";
+import { createGenerateStep } from "./generate.step";
+
+const chunks: RagContext["chunks"] = [
+  {
+    chunkId: "chunk-budget",
+    documentName: "Finance handbook.pdf",
+    text: "To request a budget, fill in the request form and send it to the treasurer.",
+    page: 4,
+    score: 0.82,
+  },
+  {
+    chunkId: "chunk-events",
+    documentName: "Events guide.pdf",
+    text: "Events need approval two weeks before the date.",
+    page: 9,
+    score: 0.61,
+  },
+];
+
+function contextFor(question: string): RagContext {
+  return { question, history: [], chunks, citations: [], timings: {} };
+}
+
+function modelReplying(text: string) {
+  const inputs: { system: string; prompt: string }[] = [];
+  const model: LanguageModel = {
+    async generate(input) {
+      inputs.push(input);
+      return { text, tokens: 20 };
+    },
+  };
+  return { model, inputs };
+}
+
+function modelThrowing(error: unknown): LanguageModel {
+  return {
+    async generate() {
+      throw error;
+    },
+  };
+}
+
+describe("generate step", () => {
+  it("TC1: [1] in the answer points to the first retrieved chunk's document and page", async () => {
+    const { model } = modelReplying("Fill in the request form and send it to the treasurer [1].");
+    const ctx = await createGenerateStep(model).run(
+      contextFor("What is the budget request process?"),
+    );
+
+    expect(ctx.outcome).toBe("answered");
+    expect(ctx.answer).toContain("[1]");
+    expect(ctx.citations).toEqual([
+      { chunkId: "chunk-budget", documentName: "Finance handbook.pdf", page: 4 },
+    ]);
+  });
+
+  it("maps each number to its chunk, once, in order of first use, and skips numbers with no chunk", async () => {
+    const { model } = modelReplying("Approval first [2], then the form [1][2]. See also [7].");
+    const ctx = await createGenerateStep(model).run(contextFor("q"));
+
+    expect(ctx.citations.map((c) => c.chunkId)).toEqual(["chunk-events", "chunk-budget"]);
+  });
+
+  it("sends the rules as the system prompt and each chunk as a numbered passage with document and page", async () => {
+    const { model, inputs } = modelReplying("Answer [1].");
+    await createGenerateStep(model).run(contextFor("What is the budget request process?"));
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].system).toBe(SYSTEM_PROMPT);
+    expect(inputs[0].prompt).toContain(
+      '<passage number="1" document="Finance handbook.pdf" page="4">',
+    );
+    expect(inputs[0].prompt).toContain('<passage number="2" document="Events guide.pdf" page="9">');
+    expect(inputs[0].prompt).toContain("Question: What is the budget request process?");
+  });
+
+  it("returns not available with no citations when the model says the chunks lack the answer", async () => {
+    const { model } = modelReplying(`${FALLBACK_REPLY}\n`);
+    const ctx = await createGenerateStep(model).run(contextFor("q"));
+
+    expect(ctx.outcome).toBe("not_available");
+    expect(ctx.answer).toBe(FALLBACK_REPLY);
+    expect(ctx.citations).toEqual([]);
+  });
+
+  it("AC3: a model timeout throws ProviderError, not the fallback reply", async () => {
+    const step = createGenerateStep(modelThrowing(new ProviderError("timeout", "timed out")));
+    await expect(step.run(contextFor("q"))).rejects.toMatchObject({
+      name: "ProviderError",
+      kind: "timeout",
+    });
+  });
+
+  it("wraps any other model failure in ProviderError", async () => {
+    const abort = new DOMException("The operation timed out.", "TimeoutError");
+    await expect(
+      createGenerateStep(modelThrowing(abort)).run(contextFor("q")),
+    ).rejects.toMatchObject({
+      kind: "timeout",
+    });
+    const crash = createGenerateStep(modelThrowing(new Error("socket hang up")));
+    await expect(crash.run(contextFor("q"))).rejects.toBeInstanceOf(ProviderError);
+    await expect(crash.run(contextFor("q"))).rejects.toMatchObject({ kind: "failure" });
+  });
+});

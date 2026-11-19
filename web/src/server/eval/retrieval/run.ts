@@ -10,7 +10,7 @@ import { formatReport } from "./formatReport";
 import { InputError, checkInputs, chunkRowSchema, parseJsonl, questionRowSchema } from "./inputs";
 
 // Command line entry. Run from web/ (see README.md next to this file):
-//   bun run eval:retrieval --chunks <file> --questions <file> [--embedder fake|gemini]
+//   bun run eval:retrieval --chunks <file> --questions <file> [--embedder fake|gateway]
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../../../..");
 const PRIVATE_DIR = resolve(REPO_ROOT, "fixtures/private/eval");
@@ -24,24 +24,24 @@ function git(args: string[]): string | null {
 }
 
 /**
- * The embedders this script can use. `model` is part of the cache key: change it when the model or
- * its settings change, so old vectors are not reused. Adapters load on demand, so a fake run never
- * touches the Gemini adapter or its configuration.
- * TODO(#65): build the Gemini label from the model and dimensions the adapter exports.
+ * The embedders this script can use, each with its cache label. The label is part of the cache key, so a model or
+ * size change never reuses old vectors. Adapters load on demand, so a fake run never touches the AI gateway or its
+ * configuration. The gateway reads the model from AI_EMBEDDING_MODEL and fails with the name of any missing variable.
  */
-const EMBEDDERS = new Map<string, { model: string; load: () => Promise<Embedder> }>([
+const EMBEDDERS = new Map<string, () => Promise<{ embedder: Embedder; model: string }>>([
   [
     "fake",
-    {
+    async () => ({
+      embedder: (await import("@/server/ai/adapters/fake")).fakeWordEmbedder,
       model: "fake-word-hash-v1",
-      load: async () => (await import("@/server/ai/adapters/fake")).fakeWordEmbedder,
-    },
+    }),
   ],
   [
-    "gemini",
-    {
-      model: "gemini-embedding-001@1536",
-      load: async () => (await import("@/server/ai/adapters/gemini")).geminiEmbedder,
+    "gateway",
+    async () => {
+      const { gatewayEmbedder, embeddingModelInfo } = await import("@/server/ai/adapters/gateway");
+      const { model, dimensions } = embeddingModelInfo();
+      return { embedder: gatewayEmbedder, model: `${model}@${dimensions}` };
     },
   ],
 ]);
@@ -60,17 +60,16 @@ async function main(): Promise<number> {
   if (!values.chunks || !values.questions) {
     process.stderr.write(
       "usage: bun run eval:retrieval --chunks <chunks.jsonl> --questions <questions.jsonl> " +
-        "[--embedder fake|gemini] [--out <results.json>] [--cache <file> | --no-cache]\n",
+        "[--embedder fake|gateway] [--out <results.json>] [--cache <file> | --no-cache]\n",
     );
     return 2;
   }
   const embedderName = values.embedder;
-  const choice = EMBEDDERS.get(embedderName);
-  if (!choice) {
+  const load = EMBEDDERS.get(embedderName);
+  if (!load) {
     process.stderr.write(`--embedder must be one of: ${[...EMBEDDERS.keys()].join(", ")}\n`);
     return 2;
   }
-  const { model } = choice;
 
   const chunksPath = resolve(values.chunks);
   const questionsPath = resolve(values.questions);
@@ -81,9 +80,10 @@ async function main(): Promise<number> {
     values.questions,
   );
   checkInputs(chunks, questions);
+  const { embedder: base, model } = await load();
 
   const cache = new EmbeddingCache(values["no-cache"] ? null : resolve(values.cache));
-  const embedder = cachedEmbedder(await choice.load(), model, cache);
+  const embedder = cachedEmbedder(base, model, cache);
   const report = await evaluateRetrieval(chunks, questions, embedder);
 
   const commit = git(["rev-parse", "HEAD"]) ?? "unknown";

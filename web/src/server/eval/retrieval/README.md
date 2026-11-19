@@ -19,17 +19,17 @@ From `web/`:
 bun run eval:retrieval \
   --chunks ../fixtures/private/eval/chunks.jsonl \
   --questions ../fixtures/private/eval/questions.jsonl \
-  --embedder gemini
+  --embedder gateway
 ```
 
-| Flag          | Default                                                    | Meaning                                                                                               |
-| ------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `--chunks`    | required                                                   | chunks JSONL                                                                                          |
-| `--questions` | required                                                   | questions JSONL                                                                                       |
-| `--embedder`  | `fake`                                                     | `fake` (word-hash vectors, no network) or `gemini` (works once the Gemini adapter from #65 is merged) |
-| `--out`       | `../fixtures/private/eval/results/retrieval-<commit>.json` | results JSON, with the full commit id and whether there were local changes                            |
-| `--cache`     | `../fixtures/private/eval/embedding-cache.json`            | vectors keyed by model, task and a SHA-256 of the text, so a rerun spends no quota                    |
-| `--no-cache`  | off                                                        | embed everything again and write no cache                                                             |
+| Flag          | Default                                                    | Meaning                                                                                                |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `--chunks`    | required                                                   | chunks JSONL                                                                                           |
+| `--questions` | required                                                   | questions JSONL                                                                                        |
+| `--embedder`  | `fake`                                                     | `fake` (word-hash vectors, no network) or `gateway` (the AI gateway's model from `AI_EMBEDDING_MODEL`) |
+| `--out`       | `../fixtures/private/eval/results/retrieval-<commit>.json` | results JSON, with the full commit id and whether there were local changes                             |
+| `--cache`     | `../fixtures/private/eval/embedding-cache.json`            | vectors keyed by model, task and a SHA-256 of the text, so a rerun spends no quota                     |
+| `--no-cache`  | off                                                        | embed everything again and write no cache                                                              |
 
 Try it on the synthetic example:
 
@@ -37,7 +37,7 @@ Try it on the synthetic example:
 bun run eval:retrieval --chunks src/server/eval/retrieval/example/chunks.jsonl --questions src/server/eval/retrieval/example/questions.jsonl
 ```
 
-The script is `bun --conditions=react-server src/server/eval/retrieval/run.ts`. Every file under `src/server/` starts with `import "server-only"`, which throws in a plain bun or node process; the `react-server` condition makes that package resolve to its empty build, as it does inside Next.js. The report goes to stdout with `process.stdout.write`, not through `logger`: it is a terminal table for the person running the script, and it holds ids and numbers only, never question or chunk text. With `gemini`, Bun loads `web/.env.local` like the app does. If the model or its settings change, update its label in `constants.ts` so the cache does not hand back old vectors.
+The script is `bun --conditions=react-server src/server/eval/retrieval/run.ts`. Every file under `src/server/` starts with `import "server-only"`, which throws in a plain bun or node process; the `react-server` condition makes that package resolve to its empty build, as it does inside Next.js. The report goes to stdout with `process.stdout.write`, not through `logger`: it is a terminal table for the person running the script, and it holds ids and numbers only, never question or chunk text. With `gateway`, Bun loads `web/.env.local` like the app does, and the run stops with the name of any missing variable, such as `GEMINI_API_KEY`. The cache label is the model and vector size from `embeddingModelInfo()`, for example `google:gemini-embedding-001@768`, so a model change never reuses old vectors.
 
 ## Input formats
 

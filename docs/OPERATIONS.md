@@ -15,6 +15,30 @@ Rules:
 - `NEXT_PUBLIC_*` values reach the browser; only the Supabase URL and anon key may be public. `SUPABASE_SECRET_KEY` and `GEMINI_API_KEY` stay on the server; `bun run check:bundle` fails the build if one reaches the browser output.
 - The app stops at start if a variable is missing or malformed (`server/config/env.ts`), so a misconfigured deploy fails loudly instead of running half-configured.
 
+## Local database
+
+Each developer runs Supabase on their own machine with the Supabase CLI and Docker. The schema comes only from `supabase/migrations/`, so every local database is the same.
+
+Requirements: Docker running (Docker Desktop or OrbStack) and the Supabase CLI (`brew install supabase/tap/supabase`; other systems: the Supabase CLI install page).
+
+Run from the repository root:
+
+| Task | Command | Note |
+| --- | --- | --- |
+| Start | `supabase start` | the first start downloads the images and takes a few minutes; prints the API URL, keys and Studio URL |
+| Show the URL and keys again | `supabase status` | |
+| Reset | `supabase db reset` | drops the local database, applies every migration in order, then `supabase/seed.sql` |
+| Run database tests | `supabase test db` | pgTAP tests in `supabase/tests/` |
+| Stop | `supabase stop` | keeps the data; `supabase stop --no-backup` deletes it |
+
+Studio (the local dashboard) runs at http://127.0.0.1:54323 while Supabase is started.
+
+To point the app at the local database, copy `web/.env.example` to `web/.env.local` and fill it from `supabase status`: `NEXT_PUBLIC_SUPABASE_URL` = API URL, `NEXT_PUBLIC_SUPABASE_ANON_KEY` = anon (publishable) key, `SUPABASE_SECRET_KEY` = service_role (secret) key. These local keys are not secrets of any real project, but `.env.local` is still never committed.
+
+Rules:
+- Migrations are forward only: never edit a merged migration; fix it with a new one.
+- `supabase/seed.sql` holds synthetic data only: no real emails, names or club documents.
+
 ## Vercel project settings
 
 Project `finthropic` in the club's Vercel account (team "rmitvietnamfintechclub's projects", Hobby plan), connected to this repository. The club domain `rmitvietnamfintechclub.com` is managed in the same account (Vercel DNS), so the custom domain needs no DNS change outside Vercel. Until Supabase and Gemini keys exist (PBI-002, PBI-004), all four variables hold placeholders.

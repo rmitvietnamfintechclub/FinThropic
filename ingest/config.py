@@ -2,7 +2,7 @@
 
 import os
 
-EMBEDDING_DIMENSIONS = 1536
+EMBEDDING_DIMENSIONS = 768
 CHUNK_TARGET_TOKENS = 500
 CHARS_PER_TOKEN = 4  # approximation: the tokenizer is not a dependency, 500 tokens is ~2,000 chars
 MIN_CHUNK_TOKENS = 5  # a smaller leftover piece is dropped when the page split into several

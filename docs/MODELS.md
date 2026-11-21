@@ -6,15 +6,15 @@ Migration: `supabase/migrations/0002_core_tables.sql` (PBI-002.2). Tests: `supab
 
 | Table | Module that writes it | Purpose | Who may read it | Row Level Security |
 | --- | --- | --- | --- | --- |
-| profiles | accounts | one row per person, role and status | the person (own row), admins | on; policies come with PBI-002.3 and PBI-015 |
-| upload_batches | documents | one row per upload | admins | on; no policy yet (deny) |
-| documents | documents | one row per file, with version fields | members see `member` files, EBMB and admins see all, once `ready` | on; no policy yet (deny) |
-| chunks | documents (written by the ingest worker) | searchable pieces of a document | same rule as its document (PBI-017) | on; no policy yet (deny) |
-| conversations | chat | one chat thread | its owner | on; no policy yet (deny) |
-| messages | chat | questions, answers and monitoring numbers | the owner of the conversation; admins see the monitoring numbers | on; no policy yet (deny) |
-| audit_logs | audit | who did what, to what, when | admins | on; no policy yet (deny) |
+| profiles | accounts | one row per person, role and status | the person (own row), admins | on and forced; `profiles_select_own`: a signed-in person reads their own row (admin access comes with PBI-015) |
+| upload_batches | documents | one row per upload | admins | on and forced; no policy yet (deny) |
+| documents | documents | one row per file, with version fields | members see `member` files, EBMB and admins see all, once `ready` | on and forced; no policy yet (deny) |
+| chunks | documents (written by the ingest worker) | searchable pieces of a document | same rule as its document (PBI-017) | on and forced; no policy yet (deny) |
+| conversations | chat | one chat thread | its owner | on and forced; no policy yet (deny) |
+| messages | chat | questions, answers and monitoring numbers | the owner of the conversation; admins see the monitoring numbers | on and forced; no policy yet (deny) |
+| audit_logs | audit | who did what, to what, when | admins | on and forced; no policy yet (deny) |
 
-"Who may read it" is the intended rule; until its policy lands, Row Level Security denies every request made with a user token. The ingest worker and admin jobs use the secret key, which bypasses Row Level Security (ADR 0005).
+"Who may read it" is the intended rule; until its policy lands, Row Level Security denies every request made with a user token. The ingest worker and admin jobs use the secret key, which bypasses Row Level Security (ADR 0005). Policies: `supabase/migrations/0003_rls.sql`. Tests: `supabase/tests/database/01_rls_enabled.test.sql` (on, forced, only the expected policies) and `02_anon_sees_nothing.test.sql` (no session sees nothing; a signed-in person sees only their own profile).
 
 Rules: a table is written only by the module that owns it (`ARCHITECTURE.md`, backend table). Every table has Row Level Security on, and every policy has a pgTAP test in `supabase/tests/`. Migrations are forward only.
 

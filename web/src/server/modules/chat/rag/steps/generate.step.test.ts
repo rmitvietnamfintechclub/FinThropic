@@ -135,6 +135,20 @@ describe("generate step", () => {
     expect(ctx.citations).toEqual([]);
   });
 
+  it.each([
+    ["without its full stop", FALLBACK_REPLY.slice(0, -1)],
+    ["in double quotes", `"${FALLBACK_REPLY}"`],
+    ["in curly quotes", `\u201c${FALLBACK_REPLY}\u201d`],
+    ["followed by a citation", `${FALLBACK_REPLY} [1]`],
+    ["followed by a citation list and spaces", `${FALLBACK_REPLY} [1, 2]  \n`],
+  ])("treats the fallback sentence %s as not available", async (_label, reply) => {
+    const ctx = await createGenerateStep(modelReplying(reply).model).run(contextFor("q"));
+
+    expect(ctx.outcome).toBe("not_available");
+    expect(ctx.answer).toBe(FALLBACK_REPLY);
+    expect(ctx.citations).toEqual([]);
+  });
+
   it("AC3: a model timeout throws ProviderError, not the fallback reply", async () => {
     const step = createGenerateStep(modelThrowing(new ProviderError("timeout", "timed out")));
     await expect(step.run(contextFor("q"))).rejects.toMatchObject({

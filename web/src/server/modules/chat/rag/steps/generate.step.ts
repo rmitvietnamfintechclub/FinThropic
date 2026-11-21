@@ -17,7 +17,7 @@ export function createGenerateStep(model: LanguageModel): RagStep {
     async run(ctx: RagContext): Promise<RagContext> {
       const prompt = buildPrompt(ctx.rewritten ?? ctx.question, ctx.chunks);
       const { text } = await callModel(model, { system: SYSTEM_PROMPT, prompt });
-      if (text.trim() === FALLBACK_REPLY) {
+      if (isFallback(text)) {
         return { ...ctx, answer: FALLBACK_REPLY, citations: [], outcome: "not_available" };
       }
       return {
@@ -28,6 +28,28 @@ export function createGenerateStep(model: LanguageModel): RagStep {
       };
     },
   };
+}
+
+/**
+ * The model may drop the full stop, quote the sentence or tack a citation onto it.
+ * Compare with those stripped, so a near-miss is still a refusal and never an answer.
+ */
+function isFallback(text: string): boolean {
+  return bareSentence(text) === bareSentence(FALLBACK_REPLY);
+}
+
+function bareSentence(text: string): string {
+  let current = text;
+  let previous;
+  do {
+    previous = current;
+    current = current
+      .trim()
+      .replace(/(\[\d+(?:\s*,\s*\d+)*\]\s*)+$/, "")
+      .replace(/^["'\u201c\u201d\u2018\u2019`]+|["'\u201c\u201d\u2018\u2019`]+$/g, "")
+      .replace(/[.!?\u2026]+$/, "");
+  } while (current !== previous);
+  return current;
 }
 
 async function callModel(model: LanguageModel, input: Parameters<LanguageModel["generate"]>[0]) {

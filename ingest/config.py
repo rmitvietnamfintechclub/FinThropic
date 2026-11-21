@@ -3,6 +3,9 @@
 import os
 
 EMBEDDING_DIMENSIONS = 768
+PIPELINE_VERSION = "v1"  # bump when parsing, chunking or embedding changes
+EMBEDDING_BATCH_SIZE = 100  # texts per request, keeps the free-key quota simple
+EMBEDDING_MAX_ATTEMPTS = 3  # retries only 429/5xx; a bad request fails at once
 CHUNK_TARGET_TOKENS = 500
 CHARS_PER_TOKEN = 4  # approximation: the tokenizer is not a dependency, 500 tokens is ~2,000 chars
 MIN_CHUNK_TOKENS = 5  # a smaller leftover piece is dropped when the page split into several

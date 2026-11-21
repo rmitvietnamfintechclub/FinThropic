@@ -62,7 +62,11 @@ async function callModel(model: LanguageModel, input: Parameters<LanguageModel["
     if (error instanceof ProviderError) throw error;
     const timedOut =
       error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-    throw new ProviderError(timedOut ? "timeout" : "failure", "language model call failed");
+    // errors.ts stays as #216 shipped it, so the original error rides along as `cause` here.
+    throw Object.assign(
+      new ProviderError(timedOut ? "timeout" : "failure", "language model call failed"),
+      { cause: error },
+    );
   }
 }
 

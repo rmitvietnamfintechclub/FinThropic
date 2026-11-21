@@ -168,22 +168,27 @@ describe("generate step", () => {
   });
 
   it("AC3: a model timeout throws ProviderError, not the fallback reply", async () => {
-    const step = createGenerateStep(modelThrowing(new ProviderError("timeout", "timed out")));
+    const timeout = new DOMException("The operation timed out.", "TimeoutError");
+    const step = createGenerateStep(modelThrowing(timeout));
     await expect(step.run(contextFor("q"))).rejects.toMatchObject({
       name: "ProviderError",
       kind: "timeout",
+      cause: timeout,
     });
   });
 
-  it("wraps any other model failure in ProviderError", async () => {
-    const abort = new DOMException("The operation timed out.", "TimeoutError");
+  it("passes a ProviderError through and wraps any other failure, keeping it as the cause", async () => {
+    const providerError = new ProviderError("timeout", "timed out");
     await expect(
-      createGenerateStep(modelThrowing(abort)).run(contextFor("q")),
-    ).rejects.toMatchObject({
-      kind: "timeout",
-    });
-    const crash = createGenerateStep(modelThrowing(new Error("socket hang up")));
+      createGenerateStep(modelThrowing(providerError)).run(contextFor("q")),
+    ).rejects.toBe(providerError);
+
+    const hangUp = new Error("socket hang up");
+    const crash = createGenerateStep(modelThrowing(hangUp));
     await expect(crash.run(contextFor("q"))).rejects.toBeInstanceOf(ProviderError);
-    await expect(crash.run(contextFor("q"))).rejects.toMatchObject({ kind: "failure" });
+    await expect(crash.run(contextFor("q"))).rejects.toMatchObject({
+      kind: "failure",
+      cause: hangUp,
+    });
   });
 });

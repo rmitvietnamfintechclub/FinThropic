@@ -1,6 +1,6 @@
 # 0012 Private repository with light merge rules
 
-Status: accepted
+Status: superseded by ADR 0013 (2026-11-19)
 Date: 2026-11-15   Decided by: Project Leader (repository private as agreed with the Head of Technology on 14/11)
 
 ## Context

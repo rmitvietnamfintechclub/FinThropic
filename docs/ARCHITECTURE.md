@@ -173,7 +173,7 @@ The folder structure and all example code are created by Quoc Khanh in PBI-001, 
 | No `process.env` outside `server/config`, no `dangerouslySetInnerHTML`, medium strict lint | ESLint (`bun run lint`) | `web/eslint.config.mjs`, ADR 0004 |
 | Missing or malformed environment variables stop the app at start | zod in `server/config/env.ts` | `web/src/instrumentation.ts` |
 | No secret in the browser output | `bun run check:bundle` after the build | `web/scripts/check-bundle-secrets.ts` (PBI-045.5) |
-| Every check above, plus Python lint, types and tests, PR title, secret scan (CodeQL is skipped while the repository is private, ADR 0012) | GitHub Actions | `.github/workflows/` |
+| Every check above, plus Python lint, types and tests, PR title, secret scan, CodeQL (ADR 0013) | GitHub Actions | `.github/workflows/` |
 
 A rule failure names the rule. Do not work around a rule; if it is wrong, open an ADR.
 

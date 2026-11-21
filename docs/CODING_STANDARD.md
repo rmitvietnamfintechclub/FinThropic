@@ -50,4 +50,6 @@ Medium strict (ADR 0004). Fix warnings in the files you touch.
 A new route goes in `docs/ENDPOINTS.md`, a new table in `docs/MODELS.md`, a new pattern in an ADR (`docs/adr/0000-template.md`), all in the same PR.
 
 ## Done means
-Follows this standard, CI green, tests pass, reviewed by your role pair when possible (recommended, not required), docs updated if behaviour changed. Production is deployed from `main` by hand (`docs/OPERATIONS.md`).
+Follows this standard, CI green, tests pass, approved by your role pair (1 approval, required by the ruleset on `main`), docs updated if behaviour changed, and a screen matches its approved wireframe (PBI-047) at 360 px and 1280 px, with any change from it agreed in the PR. Production is deployed from `main` by hand (`docs/OPERATIONS.md`).
+
+The account rmitvietnamfintechclub may bypass the approval rule.

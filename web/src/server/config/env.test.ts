@@ -29,12 +29,18 @@ describe("readEnv", () => {
     );
   });
 
-  it.each(["openai:text-embedding-3-small", "gemini-embedding-001", "google:", ":model", ""])(
-    "rejects the model string %j",
-    (value) => {
-      expect(() => readEnv({ ...valid, AI_EMBEDDING_MODEL: value })).toThrow("AI_EMBEDDING_MODEL");
-    },
-  );
+  it.each([
+    "openai:text-embedding-3-small",
+    "gemini-embedding-001",
+    "google:",
+    ":model",
+    "",
+    "google:gemini-embedding-001 ",
+    "google: ",
+    "google: gemini-embedding-001",
+  ])("rejects the model string %j", (value) => {
+    expect(() => readEnv({ ...valid, AI_EMBEDDING_MODEL: value })).toThrow("AI_EMBEDDING_MODEL");
+  });
 
   it("rejects an empty secret", () => {
     expect(() => readEnv({ ...valid, SUPABASE_SECRET_KEY: "" })).toThrow("SUPABASE_SECRET_KEY");

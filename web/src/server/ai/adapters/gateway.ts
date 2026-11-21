@@ -5,6 +5,7 @@ import { type Env, getEnv } from "@/server/config/env";
 import { logger } from "@/server/utils/logger";
 import {
   AI_ATTEMPTS,
+  AI_RETRY_DELAY_MS,
   AI_TIMEOUT_MS,
   type AiModelId,
   type AiProvider,
@@ -60,10 +61,10 @@ const TIMED_OUT = Symbol("timed out");
 
 /**
  * Runs `call` with a timeout per attempt and one retry. The SDK's own retries are off (`maxRetries: 0`): they never
- * retry a hang and they wait 2 s first. A retry happens after a timeout or an error the SDK marks retryable (network,
- * 408, 409, 429, 5xx); anything else (a 400, a bad key, a malformed response) fails at once. Throws ProviderError when
- * no attempt succeeds. The race is on purpose: it is a hard deadline even if a provider package or fetch ignores the
- * abort signal.
+ * retry a hang and they wait 2 s first. A retry happens after a timeout, or AI_RETRY_DELAY_MS after an error the SDK
+ * marks retryable (network, 408, 409, 429, 5xx); anything else (a 400, a bad key, a malformed response) fails at
+ * once. Throws ProviderError when no attempt succeeds. The race is on purpose: it is a hard deadline even if a
+ * provider package or fetch ignores the abort signal.
  */
 async function withRetry<T>(
   operation: string,
@@ -90,10 +91,16 @@ async function withRetry<T>(
         attempt,
         kind,
         status: apiError?.statusCode,
+        // The class name only (TypeError, AI_LoadAPIKeyError): the message can hold prompt text.
+        error: error instanceof Error ? error.name : undefined,
       });
       const retryable = kind === "timeout" || apiError?.isRetryable === true;
       if (!retryable || attempt === AI_ATTEMPTS) {
         throw new ProviderError(kind, `AI ${operation} ${kind} on ${model}`);
+      }
+      // A timeout already waited AI_TIMEOUT_MS; a rate limit or 5xx gets a pause before the retry.
+      if (kind === "failure") {
+        await new Promise((resolve) => setTimeout(resolve, AI_RETRY_DELAY_MS));
       }
     } finally {
       clearTimeout(timer);

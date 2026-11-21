@@ -1,6 +1,11 @@
 import { APICallError } from "ai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AI_ATTEMPTS, AI_TIMEOUT_MS, EMBEDDING_DIMENSIONS } from "../constants/gateway.constants";
+import {
+  AI_ATTEMPTS,
+  AI_RETRY_DELAY_MS,
+  AI_TIMEOUT_MS,
+  EMBEDDING_DIMENSIONS,
+} from "../constants/gateway.constants";
 import { ProviderError } from "../errors";
 import { embeddingModelInfo, gatewayEmbedder, gatewayLanguageModel } from "./gateway";
 
@@ -176,16 +181,36 @@ describe("gatewayEmbedder", () => {
     expect(signals.every((signal: AbortSignal) => signal.aborted)).toBe(true);
   });
 
-  it("succeeds when the retry succeeds", async () => {
+  it("retries right after a timeout, with no extra wait", async () => {
+    vi.useFakeTimers();
     provider.doEmbed
-      .mockRejectedValueOnce(apiError(503))
+      .mockReturnValueOnce(new Promise(() => {}))
       .mockResolvedValueOnce(embedResult(rawVector(3)));
 
-    const vectors = await gatewayEmbedder.embed([QUESTION], "query");
+    const result = gatewayEmbedder.embed([QUESTION], "query");
+    await vi.advanceTimersByTimeAsync(AI_TIMEOUT_MS);
 
-    expect(vectors).toHaveLength(1);
     expect(provider.doEmbed).toHaveBeenCalledTimes(2);
+    expect(await result).toHaveLength(1);
   });
+
+  it.each([429, 503])(
+    "waits AI_RETRY_DELAY_MS after a %i, then succeeds on the retry",
+    async (status) => {
+      vi.useFakeTimers();
+      provider.doEmbed
+        .mockRejectedValueOnce(apiError(status))
+        .mockResolvedValueOnce(embedResult(rawVector(3)));
+
+      const result = gatewayEmbedder.embed([QUESTION], "query");
+      await vi.advanceTimersByTimeAsync(AI_RETRY_DELAY_MS - 1);
+      expect(provider.doEmbed).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(provider.doEmbed).toHaveBeenCalledTimes(2);
+      expect(await result).toHaveLength(1);
+    },
+  );
 
   it.each([
     ["a vector of the wrong size", embedResult([0.1, 0.2])],
@@ -239,11 +264,14 @@ describe("gatewayLanguageModel", () => {
   });
 
   it("throws ProviderError('failure') after one retry and logs no prompt, question or key", async () => {
+    vi.useFakeTimers();
     provider.doGenerate.mockRejectedValue(apiError(500));
 
-    const error = await gatewayLanguageModel
+    const result = gatewayLanguageModel
       .generate({ system: SYSTEM, prompt: QUESTION })
       .catch((caught) => caught);
+    await vi.advanceTimersByTimeAsync(AI_RETRY_DELAY_MS);
+    const error = await result;
 
     expect(error).toBeInstanceOf(ProviderError);
     expect(error.kind).toBe("failure");
@@ -253,5 +281,19 @@ describe("gatewayLanguageModel", () => {
     expect(output).toContain("ai call failed");
     expect(output).toContain('"status":500');
     for (const secret of [QUESTION, SYSTEM, FAKE_KEY]) expect(output).not.toContain(secret);
+  });
+
+  it("logs the class name of a non-HTTP failure, never its message", async () => {
+    provider.doGenerate.mockRejectedValue(new TypeError(`could not read ${QUESTION}`));
+
+    const error = await gatewayLanguageModel
+      .generate({ system: SYSTEM, prompt: QUESTION })
+      .catch((caught) => caught);
+
+    expect(error).toMatchObject({ name: "ProviderError", kind: "failure" });
+    expect(provider.doGenerate).toHaveBeenCalledTimes(1);
+    const output = logged();
+    expect(output).toContain('"error":"TypeError"');
+    expect(output).not.toContain(QUESTION);
   });
 });

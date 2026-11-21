@@ -35,6 +35,17 @@ export interface RetrievalReport {
 }
 
 /**
+ * The rank of the best chunk on the gold page, counted pessimistically: every chunk off the page that scores at least
+ * as high ranks above it, so an exact tie never helps and file order never matters. Null when no chunk is on the page.
+ */
+function goldRank(ranked: RankedChunk[], gold: NonNullable<QuestionRow["gold"]>): number | null {
+  const onPage = ranked.filter((r) => isOnPage(r, gold));
+  if (onPage.length === 0) return null;
+  const best = Math.max(...onPage.map((r) => r.similarity));
+  return 1 + ranked.filter((r) => !isOnPage(r, gold) && r.similarity >= best).length;
+}
+
+/**
  * Embeds chunks as documents and questions as queries through the Embedder port, ranks every chunk
  * by cosine similarity in memory, and scores the ranking. A hit is a chunk on the gold page.
  */
@@ -62,13 +73,11 @@ export async function evaluateRetrieval(
       }))
       // Stable sort: equal scores keep file order, so a run is repeatable.
       .sort((a, b) => b.similarity - a.similarity);
-    const gold = question.gold;
-    const hitIndex = gold ? ranked.findIndex((r) => isOnPage(r, gold)) : -1;
     return {
       id: question.id,
-      gold,
-      answerable: gold !== null,
-      firstHitRank: hitIndex === -1 ? null : hitIndex + 1,
+      gold: question.gold,
+      answerable: question.gold !== null,
+      firstHitRank: question.gold ? goldRank(ranked, question.gold) : null,
       top1Similarity: ranked[0].similarity,
       top: ranked.slice(0, TOP_K_SAVED),
     };

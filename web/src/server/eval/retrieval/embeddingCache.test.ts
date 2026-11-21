@@ -1,6 +1,6 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Embedder } from "@/server/ai/ports";
 import { EmbeddingCache, cacheKey, cachedEmbedder } from "./embeddingCache";
@@ -38,6 +38,21 @@ describe("cacheKey", () => {
 
   it("does not contain the text", () => {
     expect(cacheKey("m1", "query", "secret question")).not.toContain("secret");
+  });
+});
+
+describe("EmbeddingCache", () => {
+  it.each([
+    ["empty", ""],
+    ["truncated", '{"m1|query|abc":[0.1,'],
+    ["of the wrong shape", '{"m1|query|abc":"not a vector"}'],
+  ])("names the file when it is %s", (_, content) => {
+    const path = tempFile();
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, content);
+    expect(() => new EmbeddingCache(path)).toThrow(
+      `embedding cache ${path} is not a valid cache file`,
+    );
   });
 });
 

@@ -1,0 +1,2 @@
+-- Local seed data, run by `supabase db reset` after the migrations.
+-- Synthetic data only: never real emails, names or club documents.

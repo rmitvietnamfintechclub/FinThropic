@@ -3,7 +3,9 @@
 The budget is approximate: `estimate_tokens` divides the character count by `CHARS_PER_TOKEN`, so
 500 tokens means about 2,000 characters, not an exact tokenizer count. A chunk always comes from
 one page. A nearly empty divider slide folds into the previous page, so its text is cited with the
-previous page number (the deliberate trade against "one chunk never spans two pages").
+previous page number (the deliberate trade against "one chunk never spans two pages"). A short
+trailing piece is appended to the chunk before it, so that chunk can exceed the budget by the
+leftover (a few tokens), which is cheaper than dropping the text.
 """
 
 from __future__ import annotations
@@ -57,6 +59,17 @@ def _split_to_budget(text: str, budget: int) -> list[str]:
     return [text]
 
 
+def _absorb_short_pieces(pieces: list[str]) -> list[str]:
+    """Append a leftover smaller than MIN_CHUNK_TOKENS to the piece before it."""
+    merged: list[str] = []
+    for piece in pieces:
+        if merged and estimate_tokens(piece.strip()) < MIN_CHUNK_TOKENS:
+            merged[-1] = merged[-1] + piece
+            continue
+        merged.append(piece)
+    return merged
+
+
 def _merge_near_empty(pages: list[Page]) -> list[Page]:
     """Fold one nearly empty slide into its neighbour; never a chain of them."""
     merged: list[Page] = []
@@ -86,10 +99,9 @@ def chunk(document_id: str, pages: list[Page]) -> list[Chunk]:
         text = page.text.strip()
         if not text:
             continue
-        pieces = _split_to_budget(text, CHUNK_TARGET_TOKENS)
-        for piece in pieces:
+        for piece in _absorb_short_pieces(_split_to_budget(text, CHUNK_TARGET_TOKENS)):
             body = piece.strip()
-            if not body or (estimate_tokens(body) < MIN_CHUNK_TOKENS and len(pieces) > 1):
+            if not body:
                 continue
             chunks.append(
                 Chunk(document_id=document_id, page=page.number, position=position, text=body)

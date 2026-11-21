@@ -58,6 +58,35 @@ def test_dense_single_paragraph_loses_no_words() -> None:
     assert len(" ".join(c.text for c in chunks).split()) == len(sentences.split())
 
 
+def test_short_tail_is_absorbed() -> None:
+    pages = [Page(number=1, text="a" * 1998 + "\n\nTotal: 5m")]
+    chunks = chunk("doc-1", pages)
+    assert len(chunks) == 1
+    assert "Total: 5m" in chunks[0].text
+
+
+def test_absorbed_chunk_is_still_inside_its_page() -> None:
+    text = "a" * 1998 + "\n\nTotal: 5m"
+    chunks = chunk("doc-1", [Page(number=1, text=text)])
+    assert all(c.text in text for c in chunks)
+
+
+def test_short_leading_piece_is_kept() -> None:
+    pages = [Page(number=1, text="Total: 5m\n\n" + "a" * 1998)]
+    chunks = chunk("doc-1", pages)
+    assert len(chunks) == 2
+    assert chunks[0].text == "Total: 5m"
+
+
+def test_absorption_never_crosses_a_page() -> None:
+    pages = [
+        Page(number=1, text="a" * 1998 + "\n\nmore text on page one"),
+        Page(number=2, text="z" * 10 + "\n\nTotal: 5m"),
+    ]
+    chunks = chunk("doc-1", pages)
+    assert [c.page for c in chunks if "Total: 5m" in c.text] == [2]
+
+
 def test_near_empty_divider_folds_into_previous_page(tmp_path: Path) -> None:
     chunks = chunk("doc-1", parse(near_empty_pdf(str(tmp_path / "near-empty.pdf"))))
     assert len(chunks) == 1

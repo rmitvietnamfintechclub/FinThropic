@@ -87,6 +87,18 @@ describe("generate step", () => {
     ]);
   });
 
+  it("reads comma lists such as [1, 2] and [2,1] as one citation per number", async () => {
+    const spaced = await createGenerateStep(modelReplying("Both apply [1, 2].").model).run(
+      contextFor("q"),
+    );
+    expect(spaced.citations.map((c) => c.number)).toEqual([1, 2]);
+
+    const tight = await createGenerateStep(modelReplying("Both apply [2,1].").model).run(
+      contextFor("q"),
+    );
+    expect(tight.citations.map((c) => c.number)).toEqual([2, 1]);
+  });
+
   it("sends the rules as the system prompt and each chunk as a numbered passage with document and page", async () => {
     const { model, inputs } = modelReplying("Answer [1].");
     await createGenerateStep(model).run(contextFor("What is the budget request process?"));

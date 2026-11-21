@@ -113,6 +113,57 @@ def partly_repeated_pdf(path: str) -> str:
     return path
 
 
+def table_pdf(path: str) -> str:
+    """Three pages of a small budget table; every row is unique per page.
+
+    The rows must stay unique: the repeated-line rule treats a line on more than half the pages
+    as a footer, and a repeated table would be eaten before the number rule is tested.
+    """
+    doc = pymupdf.open()  # type: ignore[no-untyped-call]
+    rows_by_page: dict[int, tuple[str, str, str]] = {
+        1: ("Office supplies", "1500", "Owner A"),  # number mid-page
+        2: ("Travel", "Owner B", "120"),  # number on the last line
+        3: ("Financial year", "2026", "Owner C"),  # year mid-page
+    }
+    for page_no, rows in rows_by_page.items():
+        page = doc.new_page()
+        page.insert_text((72, 80), f"Budget table {page_no}", fontsize=14)
+        y = 120.0
+        for row in rows:
+            page.insert_text((72, y), row, fontsize=11)
+            y += 18
+    doc.save(path)  # type: ignore[no-untyped-call]
+    return path
+
+
+def year_once_pdf(path: str) -> str:
+    """Three pages; only page 2's last line is a bare 2026."""
+    doc = pymupdf.open()  # type: ignore[no-untyped-call]
+    for page_no in (1, 2, 3):
+        page = doc.new_page()
+        page.insert_text(
+            (72, 80),
+            f"Slide {page_no} with a body line about the club.",
+            fontsize=12,
+        )
+        if page_no == 2:
+            page.insert_text((72, 780), "2026", fontsize=8)
+    doc.save(path)  # type: ignore[no-untyped-call]
+    return path
+
+
+def single_printed_number_pdf(path: str) -> str:
+    """Three pages where only page 3 ends with a bare printed 75."""
+    doc = pymupdf.open()  # type: ignore[no-untyped-call]
+    for page_no in (1, 2, 3):
+        page = doc.new_page()
+        page.insert_text((72, 80), f"Slide {page_no} body text about the club.", fontsize=12)
+        if page_no == 3:
+            page.insert_text((300, 780), "75", fontsize=8)
+    doc.save(path)  # type: ignore[no-untyped-call]
+    return path
+
+
 def near_empty_pdf(path: str) -> str:
     """A real slide followed by a divider that only says thank you."""
     doc = pymupdf.open()  # type: ignore[no-untyped-call]

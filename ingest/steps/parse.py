@@ -16,8 +16,8 @@ import pymupdf
 from config import MAX_REPEATED_LINE_WORDS, MIN_PAGES_FOR_REPEAT_RULE
 from models.chunk import Context, Page
 
-BARE_NUMBER = re.compile(
-    r"^\s*(?:page\s*)?[-\u2013\u2014/ ]*\d{1,4}\s*(?:/\s*\d{1,4})?\s*$",
+PAGE_NUMBER = re.compile(
+    r"^\s*(?:page\s*)?[-\u2013\u2014/ ]*(\d{1,4})\s*(?:/\s*\d{1,4})?\s*$",
     re.IGNORECASE,
 )
 
@@ -33,6 +33,19 @@ class PdfParseError(Exception):
 def _norm(line: str) -> str:
     """Fold a line so the same footer compares equal on every page."""
     return " ".join(unicodedata.normalize("NFKC", line).casefold().split())
+
+
+def _page_number(line: str) -> int | None:
+    match = PAGE_NUMBER.match(line)
+    return int(match.group(1)) if match else None
+
+
+def _edge_indexes(lines: list[str]) -> set[int]:
+    """Indexes of the first and last non-empty lines: where a page number can live."""
+    filled = [index for index, line in enumerate(lines) if line.strip()]
+    if not filled:
+        return set()
+    return {filled[0]} if len(filled) == 1 else {filled[0], filled[-1]}
 
 
 def read_raw_pages(path: str) -> list[tuple[int, list[str], int]]:
@@ -74,13 +87,30 @@ def parse(path: str) -> list[Page]:
         and len(key.split()) <= MAX_REPEATED_LINE_WORDS
     }
 
+    gaps: Counter[int] = Counter()
+    for number, lines, _ in raw:
+        for index in _edge_indexes(lines):
+            printed = _page_number(lines[index])
+            if printed is not None:
+                gaps[printed - number] += 1
+    shared_gaps = {
+        gap
+        for gap, count in gaps.items()
+        if total >= MIN_PAGES_FOR_REPEAT_RULE and count > total / 2
+    }
+
     pages: list[Page] = []
     for number, lines, images in raw:
-        kept = [
-            line
-            for line in lines
-            if line.strip() and _norm(line) not in repeated and not BARE_NUMBER.match(line)
-        ]
+        edges = _edge_indexes(lines)
+        kept: list[str] = []
+        for index, line in enumerate(lines):
+            if not line.strip() or _norm(line) in repeated:
+                continue
+            if index in edges:
+                printed = _page_number(line)
+                if printed is not None and (printed == number or printed - number in shared_gaps):
+                    continue
+            kept.append(line)
         pages.append(Page(number=number, text="\n".join(kept).strip(), image_count=images))
 
     if not any(page.text.strip() for page in pages):

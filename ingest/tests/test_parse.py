@@ -15,7 +15,10 @@ from tests.pdf_factory import (
     mixed_pdf,
     partly_repeated_pdf,
     printed_number_pdf,
+    single_printed_number_pdf,
+    table_pdf,
     text_pdf,
+    year_once_pdf,
 )
 
 
@@ -35,6 +38,22 @@ def test_repeated_footer_removed(tmp_path: Path) -> None:
 def test_bare_page_numbers_removed(tmp_path: Path) -> None:
     pages = parse(footer_pdf(str(tmp_path / "numbers.pdf")))
     assert all(line.strip() != str(p.number) for p in pages for line in p.text.splitlines())
+
+
+def test_table_numbers_are_not_page_numbers(tmp_path: Path) -> None:
+    pages = parse(table_pdf(str(tmp_path / "table.pdf")))
+    lines = [line for page in pages for line in page.text.splitlines()]
+    assert all(number in lines for number in ("1500", "120", "2026"))
+
+
+def test_bare_year_on_one_page_is_kept(tmp_path: Path) -> None:
+    pages = parse(year_once_pdf(str(tmp_path / "year.pdf")))
+    assert pages[1].text.splitlines()[-1] == "2026"
+
+
+def test_printed_slide_numbers_without_a_majority_stay(tmp_path: Path) -> None:
+    pages = parse(single_printed_number_pdf(str(tmp_path / "single.pdf")))
+    assert pages[2].text.splitlines()[-1] == "75"
 
 
 def test_scanned_pdf_raises_no_readable_text(tmp_path: Path) -> None:

@@ -136,6 +136,33 @@ def test_a_400_is_not_retried() -> None:
     assert len(calls) == 1
 
 
+def test_a_400_reports_the_attempt_that_failed() -> None:
+    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        return 400, {"error": "invalid api key"}
+
+    with pytest.raises(EmbeddingError, match=r"after 1 attempt\b"):
+        GeminiEmbedder(api_key="bad", transport=transport).embed(["one"], TASK_DOCUMENT)
+
+
+def test_build_embedder_strips_the_google_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.setenv("AI_EMBEDDING_MODEL", "google:gemini-embedding-2")
+    assert build_embedder().model == "gemini-embedding-2"
+
+
+def test_build_embedder_accepts_a_bare_model_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.setenv("AI_EMBEDDING_MODEL", "gemini-embedding-001")
+    assert build_embedder().model == "gemini-embedding-001"
+
+
+def test_build_embedder_rejects_a_non_google_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.setenv("AI_EMBEDDING_MODEL", "openai:text-embedding-3-large")
+    with pytest.raises(EmbeddingError, match="google provider"):
+        build_embedder()
+
+
 def test_wrong_dimension_is_rejected() -> None:
     calls: list[dict[str, Any]] = []
     embedder = GeminiEmbedder(

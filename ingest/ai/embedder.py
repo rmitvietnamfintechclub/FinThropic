@@ -93,7 +93,9 @@ class GeminiEmbedder:
 
     def _call(self, url: str, payload: dict[str, Any]) -> dict[str, Any]:
         last = "no attempt made"
+        attempts_made = 0
         for attempt in range(1, self._max_attempts + 1):
+            attempts_made = attempt
             status, body = self._transport(url, payload)
             if status == 200:
                 return body
@@ -102,7 +104,8 @@ class GeminiEmbedder:
                 break
             if attempt < self._max_attempts:
                 self._sleep(2**attempt)
-        raise EmbeddingError(f"embedding failed after {self._max_attempts} attempts ({last})")
+        plural = "attempt" if attempts_made == 1 else "attempts"
+        raise EmbeddingError(f"embedding failed after {attempts_made} {plural} ({last})")
 
 
 def _httpx_transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -127,10 +130,20 @@ class FakeEmbedder:
         return vectors
 
 
+def _model_from_env() -> str:
+    """Read AI_EMBEDDING_MODEL, which the web app writes as '<provider>:<model>'."""
+    raw = os.environ.get("AI_EMBEDDING_MODEL", f"google:{_DEFAULT_MODEL}")
+    provider, separator, model = raw.partition(":")
+    if not separator:
+        return raw  # a bare model name is accepted
+    if provider != "google":
+        raise EmbeddingError(f"AI_EMBEDDING_MODEL must name the google provider, got {raw!r}")
+    return model
+
+
 def build_embedder() -> Embedder:
     """Read the environment at run time, never at import time (see D9)."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise EmbeddingError("missing environment variable: GEMINI_API_KEY")
-    model = os.environ.get("AI_EMBEDDING_MODEL", f"google:{_DEFAULT_MODEL}")
-    return GeminiEmbedder(api_key=api_key, model=model.split(":", 1)[-1])
+    return GeminiEmbedder(api_key=api_key, model=_model_from_env())

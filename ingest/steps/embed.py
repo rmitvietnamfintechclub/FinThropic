@@ -1,4 +1,4 @@
-"""Turn each chunk into a normalized vector (1,536 numbers) with task type 'document'.
+"""Turn each chunk into a normalized vector (768 numbers) with task type 'document'.
 
 TODO PBI-003 (AI/RAG 2): use the Embedder port, never the provider SDK directly.
 """

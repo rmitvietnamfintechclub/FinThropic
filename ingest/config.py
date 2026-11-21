@@ -2,7 +2,7 @@
 
 import os
 
-EMBEDDING_DIMENSIONS = 1536
+EMBEDDING_DIMENSIONS = 768
 CHUNK_TARGET_TOKENS = 500
 LOW_TEXT_WORDS = 25  # a page with pictures and fewer words than this gets a warning
 

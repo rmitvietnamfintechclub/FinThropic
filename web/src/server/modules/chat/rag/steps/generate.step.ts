@@ -17,6 +17,9 @@ export function createGenerateStep(model: LanguageModel): RagStep {
     async run(ctx: RagContext): Promise<RagContext> {
       const prompt = buildPrompt(ctx.rewritten ?? ctx.question, ctx.chunks);
       const { text } = await callModel(model, { system: SYSTEM_PROMPT, prompt });
+      if (text.trim() === "") {
+        throw new ProviderError("failure", "language model returned no text");
+      }
       if (isFallback(text)) {
         return { ...ctx, answer: FALLBACK_REPLY, citations: [], outcome: "not_available" };
       }

@@ -149,6 +149,14 @@ describe("generate step", () => {
     expect(ctx.citations).toEqual([]);
   });
 
+  it("throws ProviderError failure when the model returns only whitespace", async () => {
+    const step = createGenerateStep(modelReplying(" \n\t ").model);
+    await expect(step.run(contextFor("q"))).rejects.toMatchObject({
+      name: "ProviderError",
+      kind: "failure",
+    });
+  });
+
   it("AC3: a model timeout throws ProviderError, not the fallback reply", async () => {
     const step = createGenerateStep(modelThrowing(new ProviderError("timeout", "timed out")));
     await expect(step.run(contextFor("q"))).rejects.toMatchObject({

@@ -30,7 +30,7 @@ export const DEFAULT_CHAT_MODEL: AiModelId = "google:gemini-3.5-flash-lite";
 /** Matches the vector(768) column. Changing it needs a migration and a re-index. */
 export const EMBEDDING_DIMENSIONS = 768;
 
-/** Per attempt. A call gets one retry, so the worst case is twice this. */
+/** Per attempt. A call gets one retry, so the worst case is twice this plus AI_RETRY_DELAY_MS. */
 export const AI_TIMEOUT_MS = 15_000;
 export const AI_ATTEMPTS = 2;
 /** Wait before the retry that follows a retryable API error (429, 5xx), so it does not hit the same limit at once. */

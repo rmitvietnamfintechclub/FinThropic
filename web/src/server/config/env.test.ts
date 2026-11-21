@@ -37,6 +37,7 @@ describe("readEnv", () => {
     "",
     "google:gemini-embedding-001 ",
     "google: ",
+    "google: gemini-embedding-001",
   ])("rejects the model string %j", (value) => {
     expect(() => readEnv({ ...valid, AI_EMBEDDING_MODEL: value })).toThrow("AI_EMBEDDING_MODEL");
   });

@@ -21,10 +21,10 @@ export function buildPrompt(question: string, chunks: RagContext["chunks"]): str
         `<passage number="${i + 1}" document="${escapeMarkup(chunk.documentName)}" page="${chunk.page}">\n${escapeMarkup(chunk.text)}\n</passage>`,
     )
     .join("\n\n");
-  return `Passages:\n\n${passages}\n\nQuestion: ${question}`;
+  return `Passages:\n\n${passages}\n\nQuestion: ${escapeMarkup(question)}`;
 }
 
-/** Document text cannot close a passage tag or break out of an attribute, so rule 4 keeps its frame. */
+/** Document text and the question cannot open or close a passage tag or break out of an attribute, so rule 4 keeps its frame. */
 function escapeMarkup(value: string): string {
   return value
     .replaceAll("&", "&amp;")

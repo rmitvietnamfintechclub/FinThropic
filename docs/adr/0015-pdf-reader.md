@@ -32,9 +32,9 @@ same suite, `ruff` and `mypy --strict` pass on 1.28.2 with the same type-ignore 
 machines that can install it.
 
 ## Consequences
-- AGPL-3.0 obligations apply if the worker is ever distributed or exposed over a network. The
-  repository is public now, so the licence verdict is an open decision, **not decided by us**: it
-  is pending from KhanhQNguyn with Khoa. It blocks merge and may change the library.
+- AGPL-3.0 obligations apply if the worker is ever distributed or exposed over a network. Decided
+  on 21 Nov 2026 by the repository owner (KhanhQNguyn): keep PyMuPDF. The source stays public, so
+  the AGPL terms are met, and pypdf is not needed.
 - Footer removal is line-based and heuristic: a line repeated on more than half the pages and at
   most 12 words long is treated as a footer. A paragraph repeated across most pages is extracted
   as several wrapped lines, so a repeated short remnant of it can be dropped too. Position-based

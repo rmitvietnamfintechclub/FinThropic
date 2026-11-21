@@ -81,6 +81,14 @@ PY
 
 To compare chunking methods (#61, #79), write one chunks file per method and run the same questions against each. The gold labels name a page, not a chunk, so they stay valid when the chunking changes.
 
+The default results file is named after the commit only (#100), so a second run on the same commit overwrites the first. Give each chunking method or embedder its own `--out`:
+
+```sh
+bun run eval:retrieval --chunks ../fixtures/private/eval/chunks-by-page.jsonl \
+  --questions ../fixtures/private/eval/questions.jsonl --embedder gateway \
+  --out ../fixtures/private/eval/results/retrieval-by-page-gateway.json
+```
+
 ## Write the questions
 
 - Put each question in `fixtures/private/eval/questions.jsonl`, with the document file name and the real PDF page (counted from 1, not the number printed on the slide).

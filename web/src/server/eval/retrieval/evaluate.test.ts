@@ -56,7 +56,7 @@ describe("evaluateRetrieval", () => {
     ]);
   });
 
-  it("ranks chunks by cosine and scores the first chunk on the gold page", async () => {
+  it("ranks chunks by cosine and scores the rank of the gold page", async () => {
     const report = await evaluateRetrieval(chunks, questions, tableEmbedder(vectors).embedder);
     const [fee, vote, none] = report.questions;
     expect(fee.firstHitRank).toBe(1);
@@ -75,6 +75,39 @@ describe("evaluateRetrieval", () => {
     expect(report.top1.noAnswer?.count).toBe(1);
     // Answerable top-1 scores are about 0.99 and 0.8, the no-answer one about 0.58.
     expect(report.top1.bestCutoff?.misclassified).toBe(0);
+  });
+
+  it("scores the best-ranked chunk when the gold page has several", async () => {
+    const pageChunks: ChunkRow[] = [
+      { chunkId: "low", documentName: "a.pdf", page: 1, text: "low" },
+      { chunkId: "other", documentName: "b.pdf", page: 1, text: "other" },
+      { chunkId: "high", documentName: "a.pdf", page: 1, text: "high" },
+    ];
+    const question: QuestionRow = {
+      id: "q",
+      question: "q",
+      gold: { documentName: "a.pdf", page: 1 },
+    };
+    const { embedder } = tableEmbedder({ low: [0, 1], other: [0.6, 0.8], high: [1, 0], q: [1, 0] });
+    const [result] = (await evaluateRetrieval(pageChunks, [question], embedder)).questions;
+    expect(result.top.map((r) => r.chunkId)).toEqual(["high", "other", "low"]);
+    expect(result.firstHitRank).toBe(1);
+  });
+
+  it("ranks a gold chunk tied with an off-page chunk below it, whatever the file order", async () => {
+    const tied: ChunkRow[] = [
+      { chunkId: "gold", documentName: "a.pdf", page: 1, text: "gold" },
+      { chunkId: "other", documentName: "b.pdf", page: 1, text: "other" },
+    ];
+    const question: QuestionRow = {
+      id: "q",
+      question: "q",
+      gold: { documentName: "a.pdf", page: 1 },
+    };
+    const { embedder } = tableEmbedder({ gold: [1, 0], other: [1, 0], q: [1, 0] });
+    const [result] = (await evaluateRetrieval(tied, [question], embedder)).questions;
+    expect(result.top.map((r) => r.chunkId)).toEqual(["gold", "other"]);
+    expect(result.firstHitRank).toBe(2);
   });
 
   it("scores the committed example with the fake word embedder", async () => {

@@ -21,8 +21,15 @@ export class EmbeddingCache {
 
   constructor(private readonly path: string | null) {
     if (path && existsSync(path)) {
-      const parsed = cacheFileSchema.safeParse(JSON.parse(readFileSync(path, "utf8")));
-      if (!parsed.success) throw new Error(`embedding cache ${path} is not a valid cache file`);
+      const invalid = new Error(`embedding cache ${path} is not a valid cache file`);
+      let json: unknown;
+      try {
+        json = JSON.parse(readFileSync(path, "utf8"));
+      } catch {
+        throw invalid;
+      }
+      const parsed = cacheFileSchema.safeParse(json);
+      if (!parsed.success) throw invalid;
       this.entries = new Map(Object.entries(parsed.data));
     }
   }

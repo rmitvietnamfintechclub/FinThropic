@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "arch": "depcruise src --config .dependency-cruiser.cjs",
-    "check:bundle": "bun scripts/check-bundle-secrets.ts"
+    "check:bundle": "bun scripts/check-bundle-secrets.ts",
+    "eval:retrieval": "bun --conditions=react-server src/server/eval/retrieval/run.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.122",

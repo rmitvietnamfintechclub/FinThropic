@@ -1,7 +1,8 @@
 import "server-only";
+import { gatewayLanguageModel } from "@/server/ai/adapters/gateway";
 import { checkCitationsStep } from "./steps/checkCitations.step";
 import { embedQuestionStep } from "./steps/embedQuestion.step";
-import { generateStep } from "./steps/generate.step";
+import { createGenerateStep } from "./steps/generate.step";
 import { mergeRrfStep } from "./steps/mergeRrf.step";
 import { rerankStep } from "./steps/rerank.step";
 import { rewriteFollowUpStep } from "./steps/rewriteFollowUp.step";
@@ -21,7 +22,7 @@ export const defaultSteps: RagStep[] = [
   mergeRrfStep,
   rerankStep,
   thresholdStep,
-  generateStep,
+  createGenerateStep(gatewayLanguageModel),
   checkCitationsStep,
   streamStep,
 ];

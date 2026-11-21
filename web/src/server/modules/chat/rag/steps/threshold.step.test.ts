@@ -9,7 +9,13 @@ function contextWith(scores: number[]): RagContext {
   return {
     question: "q",
     history: [],
-    chunks: scores.map((score, i) => ({ chunkId: `c${i}`, text: "t", page: 1, score })),
+    chunks: scores.map((score, i) => ({
+      chunkId: `c${i}`,
+      documentName: "d.pdf",
+      text: "t",
+      page: 1,
+      score,
+    })),
     citations: [],
     timings: {},
   };
@@ -50,6 +56,7 @@ describe("TC2: an off-topic question", () => {
       async run(ctx) {
         const chunk = {
           chunkId: "budget-1",
+          documentName: "Finance handbook.pdf",
           text: "Budget requests go to the treasurer.",
           page: 3,
         };

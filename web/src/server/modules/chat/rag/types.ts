@@ -8,10 +8,12 @@ export interface RagContext {
   /**
    * `score` is the cosine similarity of the chunk to the question, higher is closer:
    * `1 - (embedding <=> query)` in pgvector; never the raw distance and never the RRF score.
+   * `documentName` is the name shown in a citation; vector search (#66) fills it.
    */
-  chunks: { chunkId: string; text: string; page: number; score: number }[];
+  chunks: { chunkId: string; documentName: string; text: string; page: number; score: number }[];
   answer?: string;
-  citations: { chunkId: string; documentName: string; page: number }[];
+  /** `number` is the `[n]` marker in the answer; the passage it names is `chunks[number - 1]`. */
+  citations: { number: number; chunkId: string; documentName: string; page: number }[];
   outcome?: "answered" | "not_available";
   timings: Record<string, number>;
 }

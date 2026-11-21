@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { LanguageModel } from "@/server/ai/ports";
 import { defaultSteps, runPipeline } from "./pipeline";
+import { createGenerateStep } from "./steps/generate.step";
 import type { RagStep } from "./types";
 
 describe("answering pipeline", () => {
@@ -45,5 +47,33 @@ describe("answering pipeline", () => {
     expect(ctx.outcome).toBe("not_available");
     expect(ran).toEqual(["before"]);
     expect(Object.keys(ctx.timings)).toEqual(["before", "refuse"]);
+  });
+
+  it("AC3: rejects with ProviderError timeout when generate times out, with no fallback answer", async () => {
+    const timingOut: LanguageModel = {
+      async generate() {
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      },
+    };
+    const retrieve: RagStep = {
+      name: "retrieve",
+      run: async (ctx) => ({
+        ...ctx,
+        chunks: [{ chunkId: "c1", documentName: "Handbook.pdf", text: "t", page: 1, score: 0.9 }],
+      }),
+    };
+    const ran: string[] = [];
+    const after: RagStep = {
+      name: "after",
+      run: async (ctx) => {
+        ran.push("after");
+        return ctx;
+      },
+    };
+
+    await expect(
+      runPipeline({ question: "q", history: [] }, [retrieve, createGenerateStep(timingOut), after]),
+    ).rejects.toMatchObject({ name: "ProviderError", kind: "timeout" });
+    expect(ran).toEqual([]);
   });
 });

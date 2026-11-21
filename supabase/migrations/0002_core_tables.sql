@@ -126,7 +126,10 @@ create table public.chunks (
   -- The worker embeds before it stores (parse, chunk, enrich, embed, store),
   -- so every stored chunk has its vector. No vector index yet: PBI-020 picks
   -- exact search or HNSW by benchmark.
-  embedding         vector(1536) not null,
+  -- 768 dimensions, as agreed in #216 (ADR 0014). Must equal
+  -- EMBEDDING_DIMENSIONS in web/src/server/ai/constants/gateway.constants.ts
+  -- and ingest/config.py: a vector of any other size is rejected on insert.
+  embedding         vector(768) not null,
   -- Computed by Postgres on every write, so the app can never forget them.
   fts               tsvector generated always as (to_tsvector('english', text)) stored,
   fts_unaccent      tsvector generated always as (to_tsvector('simple', public.immutable_unaccent(text))) stored,

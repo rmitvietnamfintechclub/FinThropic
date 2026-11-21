@@ -8,7 +8,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(25);
+select plan(26);
 
 -- TC1: the seven Appendix C tables exist ------------------------------------
 select has_table('public', 'profiles',       'profiles exists');
@@ -19,7 +19,7 @@ select has_table('public', 'conversations',  'conversations exists');
 select has_table('public', 'messages',       'messages exists');
 select has_table('public', 'audit_logs',     'audit_logs exists');
 
-select col_type_is('public', 'chunks', 'embedding', 'vector(1536)', 'chunks.embedding is vector(1536)');
+select col_type_is('public', 'chunks', 'embedding', 'vector(768)', 'chunks.embedding is vector(768)');
 
 -- Test data: one auth user, profile, batch and document ----------------------
 insert into auth.users (id, email)
@@ -37,7 +37,7 @@ values ('00000000-0000-0000-0000-0000000000d1', 'handbook.pdf', 'pdf', 'docs/han
 
 insert into public.chunks (document_id, chunk_index, page, text, embedding, embedding_model, pipeline_version)
 values ('00000000-0000-0000-0000-0000000000d1', 0, 1, 'Học phí của câu lạc bộ',
-        array_fill(0, array[1536])::vector, 'test-model', 'test');
+        array_fill(0, array[768])::vector, 'test-model', 'test');
 
 -- Check constraints reject bad values (error 23514) -------------------------
 select throws_ok(
@@ -73,13 +73,21 @@ select throws_ok(
 
 select throws_ok(
   $$insert into public.chunks (document_id, chunk_index, text, embedding, embedding_model, pipeline_version)
-    values ('00000000-0000-0000-0000-0000000000d1', 0, 'again', array_fill(0, array[1536])::vector, 'm', 'v')$$,
+    values ('00000000-0000-0000-0000-0000000000d1', 0, 'again', array_fill(0, array[768])::vector, 'm', 'v')$$,
   '23505', null, 'chunks (document_id, chunk_index) is unique');
+
+-- The embedding size is fixed (error 22000) ----------------------------------
+-- Guards #216 / ADR 0014: an embedding of the wrong size, such as the 1536 of
+-- an older model, must be refused, not stored.
+select throws_ok(
+  $$insert into public.chunks (document_id, chunk_index, text, embedding, embedding_model, pipeline_version)
+    values ('00000000-0000-0000-0000-0000000000d1', 1, 'wrong size', array_fill(0, array[1536])::vector, 'm', 'v')$$,
+  '22000', null, 'chunks.embedding rejects a vector that is not 768 numbers');
 
 -- Foreign keys reject rows that point nowhere (error 23503) -----------------
 select throws_ok(
   $$insert into public.chunks (document_id, chunk_index, text, embedding, embedding_model, pipeline_version)
-    values (gen_random_uuid(), 0, 'orphan', array_fill(0, array[1536])::vector, 'm', 'v')$$,
+    values (gen_random_uuid(), 0, 'orphan', array_fill(0, array[768])::vector, 'm', 'v')$$,
   '23503', null, 'chunks.document_id must point to a document');
 
 select throws_ok(

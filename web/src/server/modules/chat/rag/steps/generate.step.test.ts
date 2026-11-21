@@ -56,15 +56,35 @@ describe("generate step", () => {
     expect(ctx.outcome).toBe("answered");
     expect(ctx.answer).toContain("[1]");
     expect(ctx.citations).toEqual([
-      { chunkId: "chunk-budget", documentName: "Finance handbook.pdf", page: 4 },
+      { number: 1, chunkId: "chunk-budget", documentName: "Finance handbook.pdf", page: 4 },
     ]);
+  });
+
+  it("carries the number of each marker, so an answer citing only [2] resolves to the second chunk", async () => {
+    const three = [...chunks, { ...chunks[0], chunkId: "c3", page: 12 }];
+    const only2 = await createGenerateStep(modelReplying("Approval first [2].").model).run({
+      ...contextFor("q"),
+      chunks: three,
+    });
+    expect(only2.citations).toEqual([
+      { number: 2, chunkId: "chunk-events", documentName: "Events guide.pdf", page: 9 },
+    ]);
+
+    const outOfRange = await createGenerateStep(modelReplying("See [7], then [2].").model).run({
+      ...contextFor("q"),
+      chunks: three,
+    });
+    expect(outOfRange.citations.map((c) => c.number)).toEqual([2]);
   });
 
   it("maps each number to its chunk, once, in order of first use, and skips numbers with no chunk", async () => {
     const { model } = modelReplying("Approval first [2], then the form [1][2]. See also [7].");
     const ctx = await createGenerateStep(model).run(contextFor("q"));
 
-    expect(ctx.citations.map((c) => c.chunkId)).toEqual(["chunk-events", "chunk-budget"]);
+    expect(ctx.citations.map((c) => [c.number, c.chunkId])).toEqual([
+      [2, "chunk-events"],
+      [1, "chunk-budget"],
+    ]);
   });
 
   it("sends the rules as the system prompt and each chunk as a numbered passage with document and page", async () => {

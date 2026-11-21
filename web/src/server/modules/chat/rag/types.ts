@@ -12,7 +12,8 @@ export interface RagContext {
    */
   chunks: { chunkId: string; documentName: string; text: string; page: number; score: number }[];
   answer?: string;
-  citations: { chunkId: string; documentName: string; page: number }[];
+  /** `number` is the `[n]` marker in the answer; the passage it names is `chunks[number - 1]`. */
+  citations: { number: number; chunkId: string; documentName: string; page: number }[];
   outcome?: "answered" | "not_available";
   timings: Record<string, number>;
 }

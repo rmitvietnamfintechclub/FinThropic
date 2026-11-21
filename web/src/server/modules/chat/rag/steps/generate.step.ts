@@ -41,11 +41,13 @@ async function callModel(model: LanguageModel, input: Parameters<LanguageModel["
   }
 }
 
-/** Each [n] in the text, in order of first use, mapped to the nth retrieved chunk. Numbers with no chunk are left to checkCitations. */
+/** Each [n] in the text, in order of first use, mapped to the nth retrieved chunk and carrying n. Numbers with no chunk are left to checkCitations. */
 function citationsIn(text: string, chunks: RagContext["chunks"]): RagContext["citations"] {
   const numbers = new Set([...text.matchAll(/\[(\d+)\]/g)].map((match) => Number(match[1])));
-  return [...numbers]
-    .map((n) => chunks[n - 1])
-    .filter((chunk) => chunk !== undefined)
-    .map(({ chunkId, documentName, page }) => ({ chunkId, documentName, page }));
+  return [...numbers].flatMap((number) => {
+    const chunk = chunks[number - 1];
+    return chunk
+      ? [{ number, chunkId: chunk.chunkId, documentName: chunk.documentName, page: chunk.page }]
+      : [];
+  });
 }

@@ -29,7 +29,7 @@ values ('00000000-0000-0000-0000-0000000000d1', 'handbook.pdf', 'pdf', 'docs/han
 
 insert into public.chunks (document_id, chunk_index, page, text, embedding, embedding_model, pipeline_version)
 values ('00000000-0000-0000-0000-0000000000d1', 0, 1, 'The membership fee is paid each semester.',
-        array_fill(0, array[1536])::vector, 'test-model', 'test');
+        array_fill(0, array[768])::vector, 'test-model', 'test');
 
 insert into public.conversations (id, user_id)
 values ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-00000000000a');

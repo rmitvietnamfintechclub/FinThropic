@@ -1,16 +1,25 @@
-"""Turn each chunk into a normalized vector (768 numbers) with task type 'document'.
-
-TODO PBI-003 (AI/RAG 2): use the Embedder port, never the provider SDK directly.
-"""
+"""Turn each chunk into a normalised vector with task type 'document'."""
 
 from __future__ import annotations
 
+from ai.embedder import TASK_DOCUMENT, Embedder, build_embedder
+from config import PIPELINE_VERSION
 from models.chunk import Context
 
 
 class EmbedStep:
     name = "embed"
 
+    def __init__(self, embedder: Embedder | None = None) -> None:
+        self._embedder = embedder
+
     def run(self, ctx: Context) -> Context:
-        # Placeholder so the walking skeleton runs end to end. Replace in the PBI named above.
+        if not ctx.chunks:
+            return ctx
+        embedder = self._embedder or build_embedder()
+        vectors = embedder.embed([chunk.text for chunk in ctx.chunks], TASK_DOCUMENT)
+        for chunk, vector in zip(ctx.chunks, vectors, strict=True):
+            chunk.embedding = vector
+            chunk.embedding_model = embedder.model
+            chunk.pipeline_version = PIPELINE_VERSION
         return ctx

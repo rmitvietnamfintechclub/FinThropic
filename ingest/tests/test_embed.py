@@ -6,6 +6,7 @@ import math
 import os
 from typing import Any
 
+import httpx
 import pytest
 
 from ai.embedder import (
@@ -14,7 +15,9 @@ from ai.embedder import (
     EmbeddingError,
     FakeEmbedder,
     GeminiEmbedder,
+    TransientTransportError,
     Transport,
+    _httpx_transport,
     build_embedder,
 )
 from config import EMBEDDING_DIMENSIONS, PIPELINE_VERSION
@@ -31,7 +34,9 @@ def _vectors(count: int, dimensions: int, scale: float = 1.0) -> list[list[float
 
 
 def _transport_returning(vectors: list[list[float]], calls: list[dict[str, Any]]) -> Transport:
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         calls.append(payload)
         body: dict[str, Any] = {"embeddings": [{"values": vector} for vector in vectors]}
         return 200, body
@@ -42,7 +47,9 @@ def _transport_returning(vectors: list[list[float]], calls: list[dict[str, Any]]
 def test_one_request_per_batch_of_100() -> None:
     batches: list[int] = []
 
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         requests = payload["requests"]
         batches.append(len(requests))
         body: dict[str, Any] = {
@@ -97,7 +104,9 @@ def test_retries_a_429_then_succeeds() -> None:
     attempts: list[int] = []
     sleeps: list[float] = []
 
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         attempts.append(1)
         if len(attempts) < 2:
             return 429, {"error": "rate limited"}
@@ -114,7 +123,9 @@ def test_retries_a_429_then_succeeds() -> None:
 def test_gives_up_after_three_attempts() -> None:
     sleeps: list[float] = []
 
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         return 429, {"error": "rate limited"}
 
     with pytest.raises(EmbeddingError, match="3 attempts"):
@@ -127,7 +138,9 @@ def test_gives_up_after_three_attempts() -> None:
 def test_a_400_is_not_retried() -> None:
     calls: list[int] = []
 
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         calls.append(1)
         return 400, {"error": "invalid api key"}
 
@@ -137,23 +150,97 @@ def test_a_400_is_not_retried() -> None:
 
 
 def test_a_400_reports_the_attempt_that_failed() -> None:
-    def transport(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         return 400, {"error": "invalid api key"}
 
     with pytest.raises(EmbeddingError, match=r"after 1 attempt\b"):
         GeminiEmbedder(api_key="bad", transport=transport).embed(["one"], TASK_DOCUMENT)
 
 
-def test_build_embedder_strips_the_google_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_embedder_keeps_the_web_model_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    # chunks.embedding_model must hold the same 'provider:model' string as the web gateway.
     monkeypatch.setenv("GEMINI_API_KEY", "k")
     monkeypatch.setenv("AI_EMBEDDING_MODEL", "google:gemini-embedding-2")
-    assert build_embedder().model == "gemini-embedding-2"
+    assert build_embedder().model == "google:gemini-embedding-2"
+
+
+def test_build_embedder_defaults_to_the_web_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.delenv("AI_EMBEDDING_MODEL", raising=False)
+    assert build_embedder().model == "google:gemini-embedding-001"
 
 
 def test_build_embedder_accepts_a_bare_model_name(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "k")
     monkeypatch.setenv("AI_EMBEDDING_MODEL", "gemini-embedding-001")
-    assert build_embedder().model == "gemini-embedding-001"
+    assert build_embedder().model == "google:gemini-embedding-001"
+
+
+def test_the_api_key_is_sent_in_a_header_not_the_url() -> None:
+    seen: list[tuple[str, dict[str, str]]] = []
+
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
+        seen.append((url, headers))
+        return 200, {"embeddings": [{"values": _vectors(1, EMBEDDING_DIMENSIONS)[0]}]}
+
+    GeminiEmbedder(api_key="secret-key", transport=transport).embed(["one"], TASK_DOCUMENT)
+    url, headers = seen[0]
+    assert "secret-key" not in url
+    assert headers == {"x-goog-api-key": "secret-key"}
+
+
+def test_a_timeout_is_retried_then_reported_as_embedding_error() -> None:
+    sleeps: list[float] = []
+
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
+        raise TransientTransportError("ReadTimeout")
+
+    with pytest.raises(EmbeddingError, match=r"after 3 attempts \(no response: ReadTimeout\)"):
+        GeminiEmbedder(api_key="k", transport=transport, sleep=sleeps.append).embed(
+            ["one"], TASK_DOCUMENT
+        )
+    assert sleeps == [2, 4]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{}, {"embeddings": [{}]}, {"embeddings": "oops"}, {"embeddings": [None]}],
+)
+def test_a_malformed_200_body_is_an_embedding_error(body: dict[str, Any]) -> None:
+    def transport(
+        url: str, headers: dict[str, str], payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
+        return 200, body
+
+    with pytest.raises(EmbeddingError):
+        GeminiEmbedder(api_key="k", transport=transport).embed(["one"], TASK_DOCUMENT)
+
+
+def test_httpx_transport_turns_a_non_json_error_page_into_a_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def post(url: str, **kwargs: Any) -> httpx.Response:
+        return httpx.Response(503, text="<html>Service Unavailable</html>")
+
+    monkeypatch.setattr(httpx, "post", post)
+    status, body = _httpx_transport("https://example.test", {}, {})
+    assert status == 503
+    assert "Service Unavailable" in body["error"]
+
+
+def test_httpx_transport_raises_transient_on_a_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    def post(url: str, **kwargs: Any) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out")
+
+    monkeypatch.setattr(httpx, "post", post)
+    with pytest.raises(TransientTransportError, match="ReadTimeout"):
+        _httpx_transport("https://example.test", {}, {})
 
 
 def test_build_embedder_rejects_a_non_google_provider(monkeypatch: pytest.MonkeyPatch) -> None:

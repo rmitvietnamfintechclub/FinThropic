@@ -21,6 +21,12 @@ const schema = z.object({
   GEMINI_API_KEY: z.string().min(1),
   AI_EMBEDDING_MODEL: modelId(DEFAULT_EMBEDDING_MODEL),
   AI_CHAT_MODEL: modelId(DEFAULT_CHAT_MODEL),
+  // Feature flag for POST /api/chat while it has no sign-in (PBI-004.5 until PBI-017 and PBI-018).
+  // Off unless set to "true", so production stays closed by default. Anything else fails at start-up.
+  CHAT_API_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -18,6 +18,14 @@ describe("withErrorHandler", () => {
     expect(response.headers.get("x-request-id")).toBe("abc");
   });
 
+  it("gives the handler the same request id it puts on the response", async () => {
+    const response = await withErrorHandler(async (_request, { requestId }) =>
+      Response.json({ requestId }),
+    )(request({ "x-request-id": "abc" }));
+    expect(await response.json()).toEqual({ requestId: "abc" });
+    expect(response.headers.get("x-request-id")).toBe("abc");
+  });
+
   it("replaces an unsafe incoming request id", async () => {
     const wrapped = withErrorHandler(async () => new Response("ok"));
     const response = await wrapped(

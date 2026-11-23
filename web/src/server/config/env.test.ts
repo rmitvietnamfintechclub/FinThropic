@@ -17,6 +17,16 @@ describe("readEnv", () => {
     expect(() => readEnv({ ...valid, GEMINI_API_KEY: undefined })).toThrow("GEMINI_API_KEY");
   });
 
+  it("keeps the chat API off unless it is switched on", () => {
+    expect(readEnv(valid).CHAT_API_ENABLED).toBe(false);
+    expect(readEnv({ ...valid, CHAT_API_ENABLED: "true" }).CHAT_API_ENABLED).toBe(true);
+    expect(readEnv({ ...valid, CHAT_API_ENABLED: "false" }).CHAT_API_ENABLED).toBe(false);
+  });
+
+  it("refuses a chat API flag that is not true or false", () => {
+    expect(() => readEnv({ ...valid, CHAT_API_ENABLED: "yes" })).toThrow("CHAT_API_ENABLED");
+  });
+
   it("defaults the AI models to Google", () => {
     const env = readEnv(valid);
     expect(env.AI_EMBEDDING_MODEL).toBe("google:gemini-embedding-001");

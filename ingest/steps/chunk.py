@@ -104,7 +104,7 @@ def chunk(document_id: str, pages: list[Page]) -> list[Chunk]:
             if not body:
                 continue
             chunks.append(
-                Chunk(document_id=document_id, page=page.number, position=position, text=body)
+                Chunk(document_id=document_id, page=page.number, chunk_index=position, text=body)
             )
             position += 1
     return chunks

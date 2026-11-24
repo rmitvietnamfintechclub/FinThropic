@@ -13,6 +13,7 @@ How the app is deployed, rolled back and protected. Owner: Backend 2 (runbook), 
 Rules:
 - Preview and Production variables are separate in Vercel. A preview never holds a production key.
 - `NEXT_PUBLIC_*` values reach the browser; only the Supabase URL and anon key may be public. `SUPABASE_SECRET_KEY` and `GEMINI_API_KEY` stay on the server; `bun run check:bundle` fails the build if one reaches the browser output.
+- The ingest worker reads `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GEMINI_API_KEY` at run time. They belong in the worker's environment (GitHub Actions secrets), never in `web/.env.local`, and the worker never uses the `NEXT_PUBLIC_` prefix, which only means something to a Next.js build. `SUPABASE_SECRET_KEY` is the `service_role` key and bypasses Row Level Security.
 - The app stops at start if a variable is missing or malformed (`server/config/env.ts`), so a misconfigured deploy fails loudly instead of running half-configured.
 
 ## Local database

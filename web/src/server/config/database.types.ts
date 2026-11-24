@@ -150,6 +150,7 @@ export type Database = {
           status: string;
           storage_path: string;
           supersedes_id: string | null;
+          warnings: Json;
         };
         ComputedFields: never;
         Insert: {
@@ -168,6 +169,7 @@ export type Database = {
           status?: string;
           storage_path: string;
           supersedes_id?: string | null;
+          warnings?: Json;
         };
         Update: {
           academic_year?: string | null;
@@ -185,6 +187,7 @@ export type Database = {
           status?: string;
           storage_path?: string;
           supersedes_id?: string | null;
+          warnings?: Json;
         };
         Relationships: [
           {
@@ -345,6 +348,16 @@ export type Database = {
       current_user_level: { Args: Record<PropertyKey, never>; Returns: string };
       immutable_unaccent: { Args: { input: string }; Returns: string };
       keyword_tsquery: { Args: { question: string }; Returns: unknown };
+      replace_document_chunks: {
+        Args: {
+          p_chunks: Json;
+          p_document_id: string;
+          p_error: string;
+          p_status: string;
+          p_warnings: Json;
+        };
+        Returns: undefined;
+      };
       search_chunks_keyword: {
         Args: { match_count?: number; query: string };
         Returns: {

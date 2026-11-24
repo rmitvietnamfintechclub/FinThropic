@@ -1,4 +1,4 @@
--- 0005_document_warnings_and_chunk_writes.sql
+-- 0008_document_warnings_and_chunk_writes.sql
 -- Forward-only. 0002 stays as merged; this adds the warnings column and the one
 -- write function the worker uses, so a status change and its chunks commit together.
 

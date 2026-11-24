@@ -5,6 +5,8 @@ export interface RagContext {
   question: string;
   history: { role: "user" | "assistant"; text: string }[];
   rewritten?: string;
+  /** The question as a normalized vector (task "query"), set by the embedQuestion step for vector search. */
+  questionEmbedding?: number[];
   /**
    * `score` is the cosine similarity of the chunk to the question, higher is closer:
    * `1 - (embedding <=> query)` in pgvector; never the raw distance and never the RRF score.

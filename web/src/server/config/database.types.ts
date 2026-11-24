@@ -356,6 +356,17 @@ export type Database = {
           page: number;
         }[];
       };
+      search_chunks_vector: {
+        Args: { match_count?: number; query_embedding: string };
+        Returns: {
+          chunk_id: string;
+          chunk_text: string;
+          document_id: string;
+          document_name: string;
+          page: number;
+          similarity: number;
+        }[];
+      };
       search_stop_words: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {

@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "arch": "depcruise src --config .dependency-cruiser.cjs",
     "check:bundle": "bun scripts/check-bundle-secrets.ts",
-    "eval:retrieval": "bun --conditions=react-server src/server/eval/retrieval/run.ts"
+    "eval:retrieval": "bun --conditions=react-server src/server/eval/retrieval/run.ts",
+    "db:types": "supabase gen types typescript --local > src/server/config/database.types.ts && prettier --write src/server/config/database.types.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.122",

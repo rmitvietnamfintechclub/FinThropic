@@ -7,12 +7,18 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 from ai.embedder import EmbeddingError
 from models.chunk import Chunk, Context, Page
-from pipeline import run
-from repositories.documents import FakeDocumentWriter, NullDocumentWriter
+from pipeline import default_steps, run
+from repositories.documents import (
+    FakeDocumentWriter,
+    NullDocumentWriter,
+    RepositoryError,
+    SupabaseDocumentWriter,
+)
 from steps.chunk import chunk
 from steps.parse import NoReadableTextError, parse
 from steps.store import StoreStep, page_warnings
@@ -158,3 +164,27 @@ def test_contract_fails_when_a_field_has_no_column() -> None:
     columns = columns_from_migrations(MIGRATIONS, "chunks")
     with pytest.raises(AssertionError, match="not_a_column"):
         _assert_columns(FakeChunk, columns)
+
+
+def test_the_runner_passes_its_writer_to_the_store_step() -> None:
+    fake = FakeDocumentWriter()
+    ctx = Context(document_id="d9", path="x.pdf")
+    ctx.chunks = [Chunk("d9", 1, 0, "text", [0.1], "google:m", "v1")]
+    run(ctx, default_steps(fake)[-1:], writer=fake)
+    assert fake.calls == ["mark_processing", "save_result"]
+
+
+def test_a_non_json_error_page_becomes_a_repository_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "https://example.test")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "test-secret")
+
+    def bad_gateway(method: str, url: str, **_: Any) -> httpx.Response:
+        return httpx.Response(
+            502, text="<html>Bad Gateway</html>", request=httpx.Request(method, url)
+        )
+
+    monkeypatch.setattr(httpx, "request", bad_gateway)
+    with pytest.raises(RepositoryError, match="502"):
+        SupabaseDocumentWriter().mark_processing("d10")

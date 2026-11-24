@@ -123,12 +123,17 @@ def _httpx_transport(
         response = httpx.request(method, url, json=payload, headers=headers, timeout=30)
     except (httpx.HTTPError, httpx.InvalidURL) as exc:
         raise RepositoryError(f"cannot reach SUPABASE_URL: {exc}") from exc
-    body: dict[str, Any] = response.json() if response.content else {}
+    if not response.content:
+        return response.status_code, {}
+    try:
+        body: dict[str, Any] = response.json()
+    except ValueError:
+        body = {"error": response.text[:200]}  # a proxy's HTML error page, for example
     return response.status_code, body
 
 
 class NullDocumentWriter:
-    """A writer that does nothing: the runner's default when no Supabase is configured."""
+    """A writer that does nothing, for tests and local runs that must not touch Supabase."""
 
     def mark_processing(self, document_id: str) -> None:
         pass

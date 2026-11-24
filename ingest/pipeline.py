@@ -19,8 +19,8 @@ from steps.store import StoreStep
 log = logging.getLogger("ingest")
 
 
-def default_steps() -> list[Step]:
-    return [ParseStep(), ChunkStep(), EnrichStep(), EmbedStep(), StoreStep()]
+def default_steps(writer: DocumentWriter | None = None) -> list[Step]:
+    return [ParseStep(), ChunkStep(), EnrichStep(), EmbedStep(), StoreStep(writer)]
 
 
 def run(
@@ -31,7 +31,7 @@ def run(
     active_writer = writer or SupabaseDocumentWriter()
     active_writer.mark_processing(ctx.document_id)
     try:
-        for step in default_steps() if steps is None else steps:
+        for step in default_steps(active_writer) if steps is None else steps:
             started = time.perf_counter()
             ctx = step.run(ctx)
             log.info(

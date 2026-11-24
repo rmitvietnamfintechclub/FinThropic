@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "arch": "depcruise src --config .dependency-cruiser.cjs",
-    "check:bundle": "bun scripts/check-bundle-secrets.ts"
+    "check:bundle": "bun scripts/check-bundle-secrets.ts",
+    "db:types": "supabase gen types typescript --local > src/server/config/database.types.ts && prettier --write src/server/config/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

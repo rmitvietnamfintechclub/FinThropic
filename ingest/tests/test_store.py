@@ -12,7 +12,7 @@ import pytest
 from ai.embedder import EmbeddingError
 from models.chunk import Chunk, Context, Page
 from pipeline import run
-from repositories.documents import FakeDocumentWriter
+from repositories.documents import FakeDocumentWriter, NullDocumentWriter
 from steps.chunk import chunk
 from steps.parse import NoReadableTextError, parse
 from steps.store import StoreStep, page_warnings
@@ -132,14 +132,10 @@ def test_pipeline_marks_failed_on_an_embedding_error() -> None:
     assert fake.failures == [("doc-1", "provider down")]
 
 
-def test_pipeline_without_a_writer_still_runs_recorder_steps(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("SUPABASE_URL", raising=False)
-    monkeypatch.delenv("SUPABASE_SECRET_KEY", raising=False)
+def test_pipeline_with_a_null_writer_still_runs_recorder_steps() -> None:
     log: list[str] = []
     ctx = Context(document_id="doc-1", path="x.pdf")
-    run(ctx, [_Recorder("a", log)])
+    run(ctx, [_Recorder("a", log)], writer=NullDocumentWriter())
     assert log == ["a"]
 
 

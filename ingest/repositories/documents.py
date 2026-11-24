@@ -99,7 +99,9 @@ class SupabaseDocumentWriter:
             headers["Prefer"] = prefer
         status, response = self._transport(method, f"{url}{path}", body, headers)
         if not 200 <= status < 300:
-            raise RepositoryError(f"{method} {path} failed with status {status}: {response}")
+            raise RepositoryError(
+                f"SUPABASE_URL {url}: {method} {path} failed with status {status}: {response}"
+            )
         return response
 
     def _credentials(self) -> tuple[str, str]:
@@ -117,7 +119,10 @@ def _httpx_transport(
 ) -> tuple[int, dict[str, Any]]:
     import httpx
 
-    response = httpx.request(method, url, json=payload, headers=headers, timeout=30)
+    try:
+        response = httpx.request(method, url, json=payload, headers=headers, timeout=30)
+    except (httpx.HTTPError, httpx.InvalidURL) as exc:
+        raise RepositoryError(f"cannot reach SUPABASE_URL: {exc}") from exc
     body: dict[str, Any] = response.json() if response.content else {}
     return response.status_code, body
 

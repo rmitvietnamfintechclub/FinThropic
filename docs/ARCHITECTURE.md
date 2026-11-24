@@ -69,6 +69,7 @@ Every file under `web/src/server/` imports `server-only`. Working example: `modu
 
 Pipes and filters: one step per file, a runner chains them.
 Ports and adapters: steps call `Embedder`, `LanguageModel`, `Reranker`; the provider SDK lives only in `server/ai/adapters/` (and `ingest/ai/` for the worker).
+The gateway runs on the Vercel AI SDK: one call shape for every provider, models picked by `provider:model` strings in `AI_EMBEDDING_MODEL` and `AI_CHAT_MODEL` (ADR 0014).
 
 ```mermaid
 flowchart LR

@@ -17,6 +17,41 @@ describe("readEnv", () => {
     expect(() => readEnv({ ...valid, GEMINI_API_KEY: undefined })).toThrow("GEMINI_API_KEY");
   });
 
+  it("keeps the chat API off unless it is switched on", () => {
+    expect(readEnv(valid).CHAT_API_ENABLED).toBe(false);
+    expect(readEnv({ ...valid, CHAT_API_ENABLED: "true" }).CHAT_API_ENABLED).toBe(true);
+    expect(readEnv({ ...valid, CHAT_API_ENABLED: "false" }).CHAT_API_ENABLED).toBe(false);
+  });
+
+  it("refuses a chat API flag that is not true or false", () => {
+    expect(() => readEnv({ ...valid, CHAT_API_ENABLED: "yes" })).toThrow("CHAT_API_ENABLED");
+  });
+
+  it("defaults the AI models to Google", () => {
+    const env = readEnv(valid);
+    expect(env.AI_EMBEDDING_MODEL).toBe("google:gemini-embedding-001");
+    expect(env.AI_CHAT_MODEL).toBe("google:gemini-3.5-flash-lite");
+  });
+
+  it("accepts a provider:model string for a registered provider", () => {
+    expect(readEnv({ ...valid, AI_CHAT_MODEL: "google:gemini-2.5-pro" }).AI_CHAT_MODEL).toBe(
+      "google:gemini-2.5-pro",
+    );
+  });
+
+  it.each([
+    "openai:text-embedding-3-small",
+    "gemini-embedding-001",
+    "google:",
+    ":model",
+    "",
+    "google:gemini-embedding-001 ",
+    "google: ",
+    "google: gemini-embedding-001",
+  ])("rejects the model string %j", (value) => {
+    expect(() => readEnv({ ...valid, AI_EMBEDDING_MODEL: value })).toThrow("AI_EMBEDDING_MODEL");
+  });
+
   it("rejects an empty secret", () => {
     expect(() => readEnv({ ...valid, SUPABASE_SECRET_KEY: "" })).toThrow("SUPABASE_SECRET_KEY");
   });

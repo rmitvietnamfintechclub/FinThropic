@@ -1,7 +1,8 @@
 import "server-only";
+import { gatewayLanguageModel } from "@/server/ai/adapters/gateway";
 import { checkCitationsStep } from "./steps/checkCitations.step";
 import { embedQuestionStep } from "./steps/embedQuestion.step";
-import { generateStep } from "./steps/generate.step";
+import { createGenerateStep } from "./steps/generate.step";
 import { mergeRrfStep } from "./steps/mergeRrf.step";
 import { rerankStep } from "./steps/rerank.step";
 import { rewriteFollowUpStep } from "./steps/rewriteFollowUp.step";
@@ -12,6 +13,7 @@ import { thresholdStep } from "./steps/threshold.step";
 import type { RagContext, RagStep } from "./types";
 
 // Pipes and filters: the runner chains the steps in order and times each one.
+// A step that sets outcome "not_available" ends the run: the steps after it never run, so no model call.
 export const defaultSteps: RagStep[] = [
   sessionStep,
   rewriteFollowUpStep,
@@ -20,7 +22,7 @@ export const defaultSteps: RagStep[] = [
   mergeRrfStep,
   rerankStep,
   thresholdStep,
-  generateStep,
+  createGenerateStep(gatewayLanguageModel),
   checkCitationsStep,
   streamStep,
 ];
@@ -34,6 +36,7 @@ export async function runPipeline(
     const started = performance.now();
     ctx = await step.run(ctx);
     ctx.timings[step.name] = Math.round(performance.now() - started);
+    if (ctx.outcome === "not_available") break;
   }
   return ctx;
 }

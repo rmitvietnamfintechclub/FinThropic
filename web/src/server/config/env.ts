@@ -1,13 +1,32 @@
 import "server-only";
 import { z } from "zod";
+import {
+  type AiModelId,
+  DEFAULT_CHAT_MODEL,
+  DEFAULT_EMBEDDING_MODEL,
+  parseAiModelId,
+} from "@/server/ai/constants/gateway.constants";
 
 // One place that knows which environment variables the app needs.
 // A missing or empty variable stops the app and names the variable (PBI-001, AC3).
+
+/** "provider:model" with a provider the AI gateway registers, so a typo fails at start-up, not on the first question. */
+const modelId = (fallback: AiModelId) =>
+  z.custom<AiModelId>((value) => parseAiModelId(value) !== undefined).default(fallback);
+
 const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SECRET_KEY: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
+  AI_EMBEDDING_MODEL: modelId(DEFAULT_EMBEDDING_MODEL),
+  AI_CHAT_MODEL: modelId(DEFAULT_CHAT_MODEL),
+  // Feature flag for POST /api/chat while it has no sign-in (PBI-004.5 until PBI-017 and PBI-018).
+  // Off unless set to "true", so production stays closed by default. Anything else fails at start-up.
+  CHAT_API_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type Env = z.infer<typeof schema>;

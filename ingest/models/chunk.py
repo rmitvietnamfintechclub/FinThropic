@@ -19,6 +19,8 @@ class Chunk:
     position: int
     text: str
     embedding: list[float] | None = None
+    embedding_model: str | None = None
+    pipeline_version: str | None = None
     warnings: list[str] = field(default_factory=list)
 
 

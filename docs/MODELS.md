@@ -8,8 +8,8 @@ Migration: `supabase/migrations/0002_core_tables.sql` (PBI-002.2). Tests: `supab
 | --- | --- | --- | --- | --- |
 | profiles | accounts | one row per person, role and status | the person (own row), admins | on and forced; `profiles_select_own`: a signed-in person reads their own row (admin access comes with PBI-015) |
 | upload_batches | documents | one row per upload | admins | on and forced; no policy yet (deny) |
-| documents | documents | one row per file, with version fields | members see `member` files, EBMB and admins see all, once `ready` | on and forced; no policy yet (deny) |
-| chunks | documents (written by the ingest worker) | searchable pieces of a document | same rule as its document (PBI-017) | on and forced; no policy yet (deny) |
+| documents | documents | one row per file, with version fields | members see `member` files, EBMB and admins see all, once `ready` | on and forced; `documents_select_by_level` (0005), see "Who can read which documents" |
+| chunks | documents (written by the ingest worker) | searchable pieces of a document | same rule as its document | on and forced; `chunks_select_by_level` (0005): readable exactly when its document is |
 | conversations | chat | one chat thread | its owner | on and forced; no policy yet (deny) |
 | messages | chat | questions, answers and monitoring numbers | the owner of the conversation; admins see the monitoring numbers | on and forced; no policy yet (deny) |
 | audit_logs | audit | who did what, to what, when | admins | on and forced; no policy yet (deny) |
@@ -17,6 +17,23 @@ Migration: `supabase/migrations/0002_core_tables.sql` (PBI-002.2). Tests: `supab
 "Who may read it" is the intended rule; until its policy lands, Row Level Security denies every request made with a user token. The ingest worker and admin jobs use the secret key, which bypasses Row Level Security (ADR 0005). Policies: `supabase/migrations/0003_rls.sql`. Tests: `supabase/tests/database/01_rls_enabled.test.sql` (on, forced, only the expected policies) and `02_anon_sees_nothing.test.sql` (no session sees nothing; a signed-in person sees only their own profile).
 
 Rules: a table is written only by the module that owns it (`ARCHITECTURE.md`, backend table). Every table has Row Level Security on, and every policy has a pgTAP test in `supabase/tests/`. Migrations are forward only.
+
+## Who can read which documents
+
+Each document has an `access_level`, chosen by the admin who uploads it: `member` (every club member) or `ebmb` (the executive board only). New documents default to `ebmb`, so a forgotten choice hides a file instead of leaking it.
+
+| Reader | Reading level | `member` documents | `ebmb` documents | Not `ready` yet (uploading, processing, failed) |
+| --- | --- | --- | --- | --- |
+| Member (role `member`, active) | `member` | yes | **no** | no |
+| EBMB member (role `ebmb`, active) | `ebmb` | yes | yes | no |
+| Admin (role `admin`, active) | `ebmb` | yes | yes | no (admin screens use the admin client) |
+| Deactivated account, no profile, or not signed in | none | no | no | no |
+
+- The level comes from the person's own `profiles` row on the server (`current_user_level()`), never from the request, so sending `level: "ebmb"` changes nothing (PBI-017).
+- A chunk is readable exactly when its document is, so search results, citations and direct reads all follow the same rule.
+- The rule is written once, as Row Level Security in `supabase/migrations/0005_read_by_level.sql`. Search functions are `security invoker` and hold no level logic of their own, so keyword search (`search_chunks_keyword`, 0006) and vector search apply it inside the same query.
+- Admin jobs, the ingest worker and the evaluation runner use the secret key, which bypasses the rule (ADR 0005); keyword search still returns only `ready` documents for them.
+- Tests: `supabase/tests/database/05_read_by_level.test.sql` (the table above) and `04_search_keyword.test.sql` (AC3: a Member's search never returns an EBMB chunk).
 
 ## Fields and constraints
 

@@ -9,3 +9,6 @@ export const FALLBACK_REPLY = "I could not find this in the club documents.";
  * retrieval smoke eval.
  */
 export const RELEVANCE_THRESHOLD = 0.5;
+
+/** How many chunks vector search returns for one question (the SQL function allows 1 to 50). */
+export const VECTOR_SEARCH_LIMIT = 8;

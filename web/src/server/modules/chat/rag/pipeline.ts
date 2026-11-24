@@ -1,12 +1,13 @@
 import "server-only";
-import { gatewayLanguageModel } from "@/server/ai/adapters/gateway";
+import { gatewayEmbedder, gatewayLanguageModel } from "@/server/ai/adapters/gateway";
 import { checkCitationsStep } from "./steps/checkCitations.step";
-import { embedQuestionStep } from "./steps/embedQuestion.step";
+import { searchRepositoryForSprint1 } from "./searchRepository";
+import { createEmbedQuestionStep } from "./steps/embedQuestion.step";
 import { createGenerateStep } from "./steps/generate.step";
 import { mergeRrfStep } from "./steps/mergeRrf.step";
 import { rerankStep } from "./steps/rerank.step";
 import { rewriteFollowUpStep } from "./steps/rewriteFollowUp.step";
-import { searchStep } from "./steps/search.step";
+import { createSearchStep } from "./steps/search.step";
 import { sessionStep } from "./steps/session.step";
 import { streamStep } from "./steps/stream.step";
 import { thresholdStep } from "./steps/threshold.step";
@@ -17,8 +18,8 @@ import type { RagContext, RagStep } from "./types";
 export const defaultSteps: RagStep[] = [
   sessionStep,
   rewriteFollowUpStep,
-  embedQuestionStep,
-  searchStep,
+  createEmbedQuestionStep(gatewayEmbedder),
+  createSearchStep(searchRepositoryForSprint1),
   mergeRrfStep,
   rerankStep,
   thresholdStep,

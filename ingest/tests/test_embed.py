@@ -274,8 +274,8 @@ def test_fake_embedder_is_deterministic_and_normalised() -> None:
 def test_step_fills_embedding_model_and_pipeline_version() -> None:
     ctx = Context(document_id="doc-1", path="x.pdf")
     ctx.chunks = [
-        Chunk(document_id="doc-1", page=1, position=0, text="one"),
-        Chunk(document_id="doc-1", page=1, position=1, text="two"),
+        Chunk(document_id="doc-1", page=1, chunk_index=0, text="one"),
+        Chunk(document_id="doc-1", page=1, chunk_index=1, text="two"),
     ]
     out = EmbedStep(embedder=FakeEmbedder()).run(ctx)
     assert all(len(chunk.embedding or []) == EMBEDDING_DIMENSIONS for chunk in out.chunks)
@@ -293,7 +293,7 @@ def test_step_without_chunks_needs_no_key(monkeypatch: pytest.MonkeyPatch) -> No
 def test_step_without_a_key_names_the_variable(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     ctx = Context(document_id="doc-1", path="x.pdf")
-    ctx.chunks = [Chunk(document_id="doc-1", page=1, position=0, text="one")]
+    ctx.chunks = [Chunk(document_id="doc-1", page=1, chunk_index=0, text="one")]
     with pytest.raises(EmbeddingError, match="GEMINI_API_KEY"):
         EmbedStep().run(ctx)
 

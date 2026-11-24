@@ -15,7 +15,7 @@ from tests.pdf_factory import near_empty_pdf, text_pdf
 def test_one_chunk_per_page_and_positions_increase(tmp_path: Path) -> None:
     chunks = chunk("doc-1", parse(text_pdf(str(tmp_path / "five.pdf"))))
     assert [c.page for c in chunks] == [1, 2, 3, 4, 5]
-    assert [c.position for c in chunks] == [0, 1, 2, 3, 4]
+    assert [c.chunk_index for c in chunks] == [0, 1, 2, 3, 4]
 
 
 def test_no_word_lost_or_duplicated(tmp_path: Path) -> None:

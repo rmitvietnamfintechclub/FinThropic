@@ -23,8 +23,11 @@ insert into public.profiles (user_id, name, email) values
 insert into public.upload_batches (id, uploaded_by)
 values ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000a');
 
+-- An EBMB document: since 0005, A (a member) may read member documents, so an
+-- EBMB one keeps this file about "nothing is readable without a rule for it".
+-- Reading by level is tested in 05_read_by_level.
 insert into public.documents (id, name, file_type, storage_path, access_level, owner, status, batch_id)
-values ('00000000-0000-0000-0000-0000000000d1', 'handbook.pdf', 'pdf', 'docs/handbook.pdf', 'member',
+values ('00000000-0000-0000-0000-0000000000d1', 'handbook.pdf', 'pdf', 'docs/handbook.pdf', 'ebmb',
         '00000000-0000-0000-0000-00000000000a', 'ready', '00000000-0000-0000-0000-0000000000b1');
 
 insert into public.chunks (document_id, chunk_index, page, text, embedding, embedding_model, pipeline_version)
@@ -76,9 +79,10 @@ select is_empty(
   'a signed-in person cannot see someone else''s profile');
 
 -- No policy yet on the other tables, so even a signed-in person sees nothing.
+-- documents and chunks have a level rule (0005), which keeps an EBMB file from a member.
 select is_empty($$select * from public.upload_batches$$, 'authenticated sees no upload batches yet');
-select is_empty($$select * from public.documents$$,      'authenticated sees no documents yet');
-select is_empty($$select * from public.chunks$$,         'authenticated sees no chunks yet');
+select is_empty($$select * from public.documents$$,      'a member sees no EBMB document');
+select is_empty($$select * from public.chunks$$,         'a member sees no chunk of an EBMB document');
 select is_empty($$select * from public.conversations$$,  'authenticated sees no conversations yet, not even their own');
 select is_empty($$select * from public.messages$$,       'authenticated sees no messages yet');
 select is_empty($$select * from public.audit_logs$$,     'authenticated sees no audit logs');

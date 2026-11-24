@@ -26,16 +26,26 @@ where oid in ('public.profiles'::regclass, 'public.upload_batches'::regclass,
               'public.audit_logs'::regclass)
 order by relname;
 
--- Only the expected policy exists --------------------------------------------
+-- Only the expected policies exist -------------------------------------------
 -- A new policy must come with its own test; this check makes adding one
 -- without updating the tests fail loudly.
+--   profiles_select_own        0003, tested in 02_anon_sees_nothing
+--   documents_select_by_level  0005, tested in 05_read_by_level
+--   chunks_select_by_level     0005, tested in 05_read_by_level
 -- pg_policies uses the "name" type, which has its own collation; casting to
 -- text with an explicit collation keeps the comparison unambiguous.
+-- Sorted by the policy itself: inside array_agg, "order by 1" would sort by
+-- the constant 1, which leaves the order to chance once there is more than one.
 select is(
-  (select array_agg((tablename || '.' || policyname)::text collate "default" order by 1)
-   from pg_policies where schemaname = 'public'),
-  array['profiles.profiles_select_own']::text[],
-  'the only policy in public is profiles_select_own');
+  (select array_agg(policy order by policy)
+   from (select (tablename || '.' || policyname)::text collate "default" as policy
+         from pg_policies where schemaname = 'public') as policies),
+  array[
+    'chunks.chunks_select_by_level',
+    'documents.documents_select_by_level',
+    'profiles.profiles_select_own'
+  ]::text[],
+  'the only policies in public are the three expected ones');
 
 -- Negative case: the check really detects a table without RLS -------------
 create table public.rls_probe (id int);

@@ -1,4 +1,4 @@
--- 0004_search_vector.sql
+-- 0007_search_vector.sql
 -- PBI-004.2 (#66): vector search over chunks, nearest first by cosine distance.
 --
 -- Finds chunks close in meaning to the question, even when they share no word

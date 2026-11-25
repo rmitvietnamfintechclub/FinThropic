@@ -5,8 +5,8 @@ Which club documents may be indexed, and with which Gemini key. The free key sen
 | Source | Level | Free key | Paid key |
 | --- | --- | --- | --- |
 | Synthetic test files (`fixtures/public/`) | Member | Yes | Yes |
-| Student Life guidelines: Club Rules and Regulations, Clubs Operation Guideline, the event report template and the event checklists | Member | Yes | Yes |
-| Club-internal documents (meeting minutes, interview templates, event reports) | EBMB | No | Only after the file list in #73 marks them |
+| Files in the club Drive folder as of 25 Nov 2026, including the Student Life guidelines (Club Rules and Regulations, Clubs Operation Guideline, event report template, event checklists) | EBMB | No | Only after the file list in #73 marks them |
+| Member-level documents uploaded later | Member | Yes, once listed in #73 | Yes |
 | Any other file | Not indexed | No | No, until it has a row in the file list (#73) |
 
 When two versions of the same rule disagree (for example the minimum number of members or the bank), the newest version applies.

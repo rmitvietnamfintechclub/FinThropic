@@ -9,4 +9,6 @@ Which club documents may be indexed, and with which Gemini key. The free key sen
 | Member-level documents uploaded later | Member | Yes, once listed in #73 | Yes |
 | Any other file | Not indexed | No | No, until it has a row in the file list (#73) |
 
+The two sample decks used to build and test PBI-003 are in that Drive folder, so they fall under the EBMB row: no free key, parse and chunk on a developer's machine only, embed only on the paid key after #73 marks them. The Head of Technology asked on 22 Nov 2026 that the uploaded documents be treated as confidential and access kept as small as possible.
+
 When two versions of the same rule disagree (for example the minimum number of members or the bank), the newest version applies.

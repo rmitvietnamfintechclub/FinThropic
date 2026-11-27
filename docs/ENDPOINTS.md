@@ -10,7 +10,7 @@ One row per route. Update it in the same PR that changes a route.
 
 Every route needs a permission test (who may call it, who may not).
 
-## Planned (proposal Appendix C)
+## Planned (proposal Appendix C, plus routes the wireframes need)
 
 Each row moves to the table above, with its exact input and output, in the PR that builds it.
 
@@ -21,7 +21,9 @@ Each row moves to the table above, with its exact input and output, in the PR th
 | POST `/api/documents/batches`, GET `/api/documents` | Admin | documents | `sequence-upload-index` |
 | PATCH `/api/documents/:id`, DELETE `/api/documents/:id` | Admin | documents | `sequence-delete-reclassify` |
 | POST `/api/documents/:id/retry` | Admin | documents | `sequence-retry-document` |
+| GET `/api/users` | Admin | accounts | none yet |
 | POST `/api/users`, POST `/api/users/import`, PATCH `/api/users/:id` | Admin | accounts | `sequence-manage-accounts` |
+| POST `/api/users/:id/invitation` (#236) | Admin | accounts | none yet |
 | GET `/api/audit` | Admin | audit | `sequence-audit-log` |
 
 The consent route (PBI-016) is added when it is built.

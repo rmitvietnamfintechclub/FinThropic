@@ -21,9 +21,9 @@ Each row moves to the table above, with its exact input and output, in the PR th
 | POST `/api/documents/batches`, GET `/api/documents` | Admin | documents | `sequence-upload-index` |
 | PATCH `/api/documents/:id`, DELETE `/api/documents/:id` | Admin | documents | `sequence-delete-reclassify` |
 | POST `/api/documents/:id/retry` | Admin | documents | `sequence-retry-document` |
-| GET `/api/users`, filtered by `search` (name or email), `role` and `status`; the accounts screen (#137) lists from it | Admin | accounts | `sequence-manage-accounts` |
+| GET `/api/users` | Admin | accounts | none yet |
 | POST `/api/users`, POST `/api/users/import`, PATCH `/api/users/:id` | Admin | accounts | `sequence-manage-accounts` |
-| POST `/api/users/:id/invitation` (#236) | Admin | accounts | `sequence-manage-accounts` |
+| POST `/api/users/:id/invitation` (#236) | Admin | accounts | none yet |
 | GET `/api/audit` | Admin | audit | `sequence-audit-log` |
 
 The consent route (PBI-016) is added when it is built.
